@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta name="roundtable-ui" content="unified">
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <script src="theme.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VaultSessions</title>
+  <link rel="icon" type="image/png" href="icons/leaf-32.png">
+  <link rel="stylesheet" href="meeting.css?v=0.13.1">
+  <script src="web-bridge.js" defer></script>
+  <script src="i18n/runtime.js" defer></script>
+  <script src="i18n/en.js" defer></script>
+  <script src="i18n/ja.js" defer></script>
+  <script src="linkify.js" defer></script>
+  <script src="image-utils.js" defer></script>
+  <script src="recipient-routing.js" defer></script>
+  <script src="auto-invitations.js?v=0.13.1" defer></script>
+  <script src="discussion-controller.js?v=0.13.1" defer></script>
+  <script src="meeting.js?v=0.13.1-discussion" defer></script>
+  <script src="meeting-view.js?v=0.13.1" defer></script>
+  <script src="summary.js" defer></script>
+  <script src="meeting-summary.js" defer></script>
+  <script src="log-font-size.js" defer></script>
+  <script src="meeting-shell.js?v=0.13.1" defer></script>
+  <script src="panel-toggle.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 7C11 4 5 13 9 22c7 5 15-2 15-15Z" fill="white"/><path d="M11 25c0-9 5-13 11-16" fill="none" stroke="#22654c" stroke-width="2"/></svg></span><div><h1>VaultSessions <span class="version">v0.13.1</span></h1><a class="creator mobile-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a></div></div>
+    <p class="tagline" data-i18n="tagline">A text-based meeting app for ChatGPT, Gemini and Claude</p>
+    <button id="toggle-participants-panel" class="quiet-button" type="button" aria-controls="participants-panel" aria-expanded="true" data-i18n-aria="hideParticipantsPanel" data-i18n-title="hideParticipantsPanel"><span aria-hidden="true">☰</span></button>
+    <nav class="header-actions" aria-label="Meeting controls" data-i18n-aria="meetingControls"><a class="creator desktop-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a><button id="settings-toggle" type="button" data-i18n-aria="settings" class="quiet-button"><span aria-hidden="true">⚙</span><span class="wide-label" data-i18n="settings">Settings</span></button><button id="switch-view" type="button">Sidebar</button></nav>
+  </header>
+  <div class="workspace">
+    <aside id="participants-panel" class="participants-rail">
+      <div class="rail-heading"><h2 data-i18n="participants">Participants</h2><button id="manage-participants" type="button" class="quiet-button"><span aria-hidden="true">＋</span> <span data-i18n="addParticipant">Add participant</span></button></div>
+      <section id="invitations" aria-label="Participants" data-i18n-aria="participants"></section>
+      <p id="participants" hidden></p>
+      <details id="meeting-setup" open>
+        <summary><span aria-hidden="true">⚙</span> <span data-i18n="meetingSettings">Meeting settings</span><span class="chevron" aria-hidden="true">⌄</span></summary>
+        <fieldset id="discussion-settings">
+          <legend class="sr-only" data-i18n="discussionSettings">Discussion settings</legend>
+          <label class="setting-row" for="meeting-language"><span data-i18n="language">Language</span><select id="meeting-language"><option value="English">English</option><option value="Japanese">日本語</option></select></label>
+          <label class="setting-row" for="max-speeches"><span data-i18n="contributionLimit">Contribution limit</span><input id="max-speeches" type="number" min="1" max="100" value="3" required></label><p class="setting-hint" data-i18n="contributionHint">Maximum contributions per discussion, excluding passes.</p>
+          <label class="setting-row" for="max-queries"><span data-i18n="requestLimit">Advanced request limit</span><input id="max-queries" type="number" min="1" max="300" value="6" required></label><p class="setting-hint" data-i18n="requestHint">Maximum requests per discussion, including passes.</p>
+          <p class="note order-note" data-i18n="orderHint">ChatGPT → Gemini → Claude, starting with the first responder.</p>
+        </fieldset>
+        <details class="technical-tools"><summary data-i18n="advanced">Advanced</summary><p id="connection"></p>
+        <details id="protocol-diagnostics" hidden><summary data-i18n="diagnostics">Response format details</summary><div id="protocol-details"></div></details>
+        <button id="reload-extension" type="button" class="quiet-button" data-i18n="reloadExtension">Reload extension</button></details>
+      </details>
+      <div class="sharing-row"><label for="auto-page-context"><span data-i18n="pageSharing">Share current page</span><small data-i18n="pageHint">Share the current page with participants.</small></label><input id="auto-page-context" type="checkbox" class="toggle" checked disabled></div>
+      <p id="page-material-note" hidden></p>
+      <div class="compact-settings"><button id="compact-settings-toggle" type="button" class="quiet-button" data-i18n="meetingSettings">Meeting settings</button><select id="ui-language" aria-label="Interface language" data-i18n-aria="interfaceLanguage"><option value="en">EN</option><option value="ja">日本語</option></select></div>
+    </aside>
+    <main class="meeting-stage">
+      <header class="meeting-heading"><span class="conversation-icon" aria-hidden="true">▱</span><div><h2 data-i18n="meetingTitle">Group discussion</h2><p data-i18n="meetingSubtitle">A conversation with your personalized AI assistants.</p></div><span id="meeting-state" class="state-pill" role="status" data-i18n="ready">Ready to discuss</span></header>
+      <p id="status" role="status" aria-live="polite" data-i18n="initializing">Initializing meeting…</p>
+      <section id="meeting-log" aria-label="Meeting log" data-i18n-aria="meetingLog" aria-busy="false"><div id="empty-log"><span class="empty-icon" aria-hidden="true">◇</span><h2 data-i18n="emptyTitle">Bring your ideas to the table.</h2><p data-i18n="emptyHint">Connect an AI participant and start the conversation.</p></div></section>
+      <div class="log-font-controls" role="group" aria-label="Log text size" data-i18n-aria="logTextSize"><button id="log-font-smaller" type="button" aria-label="Smaller log text" data-i18n-aria="logTextSmaller">A−</button><button id="log-font-larger" type="button" aria-label="Larger log text" data-i18n-aria="logTextLarger">A＋</button><button id="log-font-reset" type="button" data-i18n="logTextReset">Reset size</button></div>
+      <div id="discussion-progress"><button id="summarize" type="button" data-i18n="summarize">Summarize discussion</button><span id="compact-meeting-state" data-i18n="ready">Ready to discuss</span><p id="current-speaker" role="status" aria-live="polite">現在発言中: なし</p><p id="discussion-counts">発言 0回 / 問い合わせ 0回 / 連続PASS 0回</p><button id="stop-discussion" type="button" disabled data-i18n="stop">Stop discussion</button></div>
+      <form id="meeting-form">
+        <label for="message" class="sr-only" data-i18n="messageLabel">Message</label>
+        <details id="image-composer"><summary aria-label="Attach images" data-i18n-aria="attachImages"><span aria-hidden="true">＋</span></summary><div class="attachment-panel"><label for="meeting-image" data-i18n="imageLimit">Attach up to 4 images · 5 MB each · 10 MB total</label><input id="meeting-image" type="file" multiple accept="image/png,image/jpeg,image/webp" aria-describedby="image-note"><div id="image-preview" hidden><div id="image-items"></div><button id="remove-image" type="button" data-i18n="removeAll">Remove all</button></div><p id="image-note" class="note" data-i18n="imageHint">Images are uploaded to each AI's official chat when you send.</p></div></details>
+        <textarea id="message" rows="2" placeholder="Type a message…" data-i18n-placeholder="messagePlaceholder" maxlength="20000" aria-describedby="keyboard-hint" required disabled></textarea>
+        <button id="send" type="submit" class="send-button" aria-label="Send message" data-i18n-aria="send" disabled>Send</button>
+        <p id="keyboard-hint" class="note" data-i18n="keyboardHint">Enter to send · Shift+Enter for a new line · @GPT, @Gemini or @Claude to address a participant.</p><p id="activity" hidden></p>
+      </form>
+    </main>
+  </div>
+</body>
+</html>

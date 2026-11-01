@@ -1,0 +1,102 @@
+{
+  "manifest_version": 3,
+  "name": "VaultSessions",
+  "version": "0.13.1",
+  "description": "Discuss with your signed-in ChatGPT, Gemini, and Claude in one shared meeting.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open VaultSessions sidebar",
+    "default_icon": {
+      "16": "icons/leaf-16.png",
+      "32": "icons/leaf-32.png",
+      "48": "icons/leaf-48.png",
+      "128": "icons/leaf-128.png"
+    }
+  },
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "file:///*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "image-utils.js",
+        "content-images.js",
+        "content-input-guard.js",
+        "content-chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "image-utils.js",
+        "content-images.js",
+        "content-input-guard.js",
+        "content-gemini.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "image-utils.js",
+        "content-images.js",
+        "content-input-guard.js",
+        "content-claude.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "exclude_matches": [
+        "*://*.chatgpt.com/*",
+        "*://chat.openai.com/*",
+        "*://gemini.google.com/*",
+        "*://*.claude.ai/*"
+      ],
+      "js": [
+        "content-page.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "file:///*",
+        "http://127.0.0.1/*"
+      ],
+      "js": [
+        "content-web-bridge.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "scripting"
+  ],
+  "minimum_chrome_version": "116",
+  "side_panel": {
+    "default_path": "meeting.html?view=sidepanel"
+  },
+  "icons": {
+    "16": "icons/leaf-16.png",
+    "32": "icons/leaf-32.png",
+    "48": "icons/leaf-48.png",
+    "128": "icons/leaf-128.png"
+  }
+}

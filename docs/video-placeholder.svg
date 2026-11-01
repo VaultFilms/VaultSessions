@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<rect width="1280" height="720" rx="24" fill="#142b23"/>
+<circle cx="640" cy="294" r="72" fill="#25634b"/>
+<path d="M621 257 L621 331 L681 294 Z" fill="#edf5ef"/>
+<text x="640" y="443" text-anchor="middle" font-family="Arial,sans-serif" font-size="46" font-weight="bold" fill="#edf5ef">VaultSessions</text>
+<text x="640" y="502" text-anchor="middle" font-family="Arial,sans-serif" font-size="27" fill="#b0cdbd">Introduction video coming soon</text>
+</svg>
