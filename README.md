@@ -1,3 +1,15 @@
+<p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/English-EN-2563eb?style=for-the-badge" alt="English"></a>
+  <a href="docs/README.ja.md"><img src="https://img.shields.io/badge/Japanese-JA-2563eb?style=for-the-badge" alt="日本語"></a>
+  <a href="docs/README.fr.md"><img src="https://img.shields.io/badge/French-FR-2563eb?style=for-the-badge" alt="Français"></a>
+  <a href="docs/README.de.md"><img src="https://img.shields.io/badge/German-DE-2563eb?style=for-the-badge" alt="Deutsch"></a>
+  <a href="docs/README.es.md"><img src="https://img.shields.io/badge/Spanish-ES-2563eb?style=for-the-badge" alt="Español"></a>
+  <a href="docs/README.it.md"><img src="https://img.shields.io/badge/Italian-IT-2563eb?style=for-the-badge" alt="Italiano"></a>
+  <a href="docs/README.id.md"><img src="https://img.shields.io/badge/Indonesian-ID-2563eb?style=for-the-badge" alt="Bahasa Indonesia"></a>
+  <a href="docs/README.pt-BR.md"><img src="https://img.shields.io/badge/Portuguese-BR-2563eb?style=for-the-badge" alt="Português (Brasil)"></a>
+  <a href="docs/README.hi.md"><img src="https://img.shields.io/badge/Hindi-HI-2563eb?style=for-the-badge" alt="हिन्दी"></a>
+</p>
+
 <p align="center"><img src="VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions logo"></p>
 <h1 align="center">VaultSessions</h1>
 
@@ -41,7 +53,6 @@ VaultSessions/
     └── ...
 ```
 
-
 1. Download or clone this repository into a permanent folder.
 2. Open `chrome://extensions/` and enable **Developer mode**.
 3. Click **Load unpacked** and select **`VaultSessions/`**, the folder containing `manifest.json` (not the repository root).
@@ -65,10 +76,10 @@ Moving the folder requires opening and registering the new `meeting.html`. Switc
 
 Some AI browser sidebars cannot interact with `file://` pages. For those integrations, install Python 3 and start the optional loopback server:
 
-| Platform | Launcher | Terminal alternative, from the `VaultSessions/` folder |
-| --- | --- | --- |
-| macOS | Double-click `VaultSessions/start.command` | `python3 serve.py` |
-| Windows | Double-click `VaultSessions/start.bat` | `py -3 serve.py` or `python serve.py` |
+| Platform | Launcher                                   | Terminal alternative, from the `VaultSessions/` folder |
+| -------- | ------------------------------------------ | ------------------------------------------------------ |
+| macOS    | Double-click `VaultSessions/start.command` | `python3 serve.py`                                     |
+| Windows  | Double-click `VaultSessions/start.bat`     | `py -3 serve.py` or `python serve.py`                  |
 
 If the macOS launcher lost its executable bit, use `chmod +x start.command` or the Terminal command above. Keep the terminal window open; Ctrl+C stops the server. Port 8766 must be free.
 
