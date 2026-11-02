@@ -1,7 +1,7 @@
 <p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions"></p>
 <h1 align="center">VaultSessions</h1>
 
-**Eine Open-Source-Besprechungs-App, in der Menschen ihre eigenen ChatGPT-, Gemini- und Claude-Assistenten mit bestehender Personalisierung und Präferenzen zusammenbringen, um gemeinsam zu denken, zu diskutieren und zusammenzuarbeiten.**
+<h3 align="center">Bringen Sie Ihre eigenen KI-Assistenten zusammen.</h3>
 
 <p align="center">
   <a href="../README.md">English</a> |
@@ -20,6 +20,8 @@
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
+
+**Eine Open-Source-Besprechungs-App, in der Menschen und ihre persönlichen KI-Assistenten — ChatGPT, Gemini und Claude — mit ihrer bestehenden Personalisierung gemeinsam denken und zusammenarbeiten können.**
 
 ## Funktionen
 

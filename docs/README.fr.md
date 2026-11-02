@@ -1,7 +1,7 @@
 <p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions"></p>
 <h1 align="center">VaultSessions</h1>
 
-**Une application de réunion open source où les humains réunissent leurs propres assistants ChatGPT, Gemini et Claude, avec leur personnalisation et leurs préférences existantes, pour réfléchir, discuter et collaborer.**
+<h3 align="center">Réunissez vos propres assistants IA.</h3>
 
 <p align="center">
   <a href="../README.md">English</a> |
@@ -20,6 +20,8 @@
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
+
+**Une application de réunion open source où les humains et leurs assistants IA personnels — ChatGPT, Gemini et Claude — peuvent réfléchir et collaborer ensemble, en conservant leur personnalisation existante.**
 
 ## Fonctionnalités
 

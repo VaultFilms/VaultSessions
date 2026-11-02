@@ -1,7 +1,7 @@
 <p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions"></p>
 <h1 align="center">VaultSessions</h1>
 
-**Aplikasi rapat sumber terbuka tempat manusia membawa asisten ChatGPT, Gemini, dan Claude mereka sendiri, beserta personalisasi dan preferensi yang sudah ada, untuk berpikir, berdiskusi, dan berkolaborasi.**
+<h3 align="center">Satukan asisten AI Anda sendiri.</h3>
 
 <p align="center">
   <a href="../README.md">English</a> |
@@ -20,6 +20,8 @@
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
+
+**Aplikasi rapat sumber terbuka tempat manusia dan asisten AI pribadi mereka — ChatGPT, Gemini, dan Claude — dapat berpikir dan berkolaborasi bersama dengan memanfaatkan personalisasi yang sudah ada.**
 
 ## Fitur
 

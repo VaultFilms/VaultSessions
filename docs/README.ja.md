@@ -1,7 +1,7 @@
 <p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessionsのロゴ"></p>
 <h1 align="center">VaultSessions</h1>
 
-**普段使っているChatGPT・Gemini・Claudeを、それぞれのパーソナライズや好みを保ったまま会議に招き、人間とAIが一緒に考え、議論し、協働できるオープンソースの会議アプリです。**
+<h3 align="center">いつものAIアシスタントを、一つの会議へ。</h3>
 
 <p align="center">
   <a href="../README.md">English</a> |
@@ -20,6 +20,8 @@
     <img src="introduction-compact.gif" alt="VaultSessionsのデモ動画" width="700">
   </a>
 </p>
+
+**人間と、それぞれが普段使っているAIアシスタント（ChatGPT・Gemini・Claude）が、既存のパーソナライズを活かして一緒に考え、協働できるオープンソースの会議アプリです。**
 
 ## 特徴
 

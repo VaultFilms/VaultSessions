@@ -1,7 +1,7 @@
 <p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions"></p>
 <h1 align="center">VaultSessions</h1>
 
-**Um aplicativo de reuniões de código aberto em que as pessoas reúnem seus próprios assistentes ChatGPT, Gemini e Claude, com a personalização e as preferências existentes, para pensar, discutir e colaborar.**
+<h3 align="center">Reúna seus próprios assistentes de IA.</h3>
 
 <p align="center">
   <a href="../README.md">English</a> |
@@ -20,6 +20,8 @@
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
+
+**Um aplicativo de reuniões de código aberto em que as pessoas e seus assistentes pessoais de IA — ChatGPT, Gemini e Claude — podem pensar e colaborar juntos, aproveitando a personalização existente.**
 
 ## Recursos
 

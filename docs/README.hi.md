@@ -1,7 +1,7 @@
 <p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions"></p>
 <h1 align="center">VaultSessions</h1>
 
-**एक ओपन सोर्स बैठक ऐप जहाँ इंसान अपने ChatGPT, Gemini और Claude सहायकों को उनके मौजूदा वैयक्तिकरण और प्राथमिकताओं के साथ एक साथ लाकर सोचते, चर्चा करते और सहयोग करते हैं।**
+<h3 align="center">अपने AI सहायकों को एक साथ लाएँ।</h3>
 
 <p align="center">
   <a href="../README.md">English</a> |
@@ -20,6 +20,8 @@
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
+
+**एक ओपन सोर्स बैठक ऐप जहाँ इंसान और उनके निजी AI सहायक — ChatGPT, Gemini और Claude — अपने मौजूदा वैयक्तिकरण का उपयोग करते हुए साथ मिलकर सोच और सहयोग कर सकते हैं।**
 
 ## सुविधाएँ
 
