@@ -345,7 +345,7 @@ async function performExchange(id, text, { silent = false, images = [], requestI
   };
   if (!silent && run?.cancelled) return { cancelledBeforeSend: true };
   stage(images.length ? VaultI18n.t('message_036') : VaultI18n.t('message_037'));
-  const result = await request({ type: 'ROUNDTABLE_SEND', provider: id, text, images, requestId, silent, returnTabId: ownTab?.id, ...targets[id] });
+  const result = await request({ type: 'ROUNDTABLE_SEND', provider: id, guardText: VaultI18n.t('inputGuardNotice'), text, images, requestId, silent, returnTabId: ownTab?.id, ...targets[id] });
   targets[id] = { tabId: result.tabId, conversationUrl: result.url };
   renderConnection();
   stage(VaultI18n.t('message_038'));
@@ -592,7 +592,7 @@ function connectPageContext() {
       note.textContent = VaultI18n.t('message_086', {0:message.material.title || message.material.url,1:(message.material.truncated || message.material.text.length > 5000) ? VaultI18n.t('notice_043') : ''});
     } else if (['PAGE_DISABLED', 'PAGE_UNAVAILABLE'].includes(message.type)) {
       clearTimeout(captureTimer); pageLoading = false; controller.setMaterial(null);
-      note.textContent = message.reason || VaultI18n.t('message_083');
+      note.textContent = uiText(message.reason || VaultI18n.t('message_083'));
     }
     syncControls();
   };

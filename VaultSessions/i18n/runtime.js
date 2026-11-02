@@ -2,7 +2,20 @@
 (function(root){
  const catalogs=new Map();let locale='en',patterns=[];
  const translatedParameters={message_053:['0'],message_046:['1'],message_086:['1']};
- try{locale=new URLSearchParams(location.search).get('ui')||localStorage.getItem('vaultsessions.locale')||'en';}catch{}
+ let requested=null,manual=null,initialized=false;
+ try{requested=new URLSearchParams(location.search).get('ui');}catch{}
+ // Older versions also saved automatic initialization as a preference. Only new explicit choices override browser detection.
+ try{manual=localStorage.getItem('vaultsessions.locale.manual');}catch{}
+ const browserLanguages=Array.isArray(root.navigator?.languages)&&root.navigator.languages.length?root.navigator.languages:[root.navigator?.language||'en'];
+ function supported(code){
+  if(typeof code!=='string')return null;
+  const normalized=code.replace(/_/g,'-').toLowerCase();
+  return [...catalogs.keys()].find(key=>key.toLowerCase()===normalized)
+    || [...catalogs.keys()].find(key=>key.toLowerCase()===normalized.split('-')[0])||null;
+ }
+ function initialLocale(){
+  return supported(requested)||supported(manual)||browserLanguages.map(supported).find(Boolean)||'en';
+ }
  const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  const format=(text,args={})=>text.replace(/\{([\w]+)\}/g,(match,key)=>Object.hasOwn(args,key)?String(args[key]):match);
  function t(key,args={}){
@@ -41,12 +54,13 @@
   for(const node of scope.querySelectorAll(selectors)){const before=node.textContent,after=message(before);if(before!==after){if(node.matches('.entry-body')&&root.RoundtableLinks)root.RoundtableLinks.render(node,after);else node.textContent=after;}}
  }
  function setLocale(code,{persist=true}={}){
+  initialized=true;
   if(!catalogs.has(code))code='en';locale=code;
   if(typeof document!=='undefined'){document.documentElement.lang=code;apply();refreshGenerated();}
-  if(persist)try{localStorage.setItem('vaultsessions.locale',code);}catch{}
+  if(persist)try{localStorage.setItem('vaultsessions.locale',code);localStorage.setItem('vaultsessions.locale.manual',code);}catch{}
   if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('vaultsessions-language',{detail:{locale:code}}));
  }
- const api={register:(code,catalog)=>{if(!/^[a-z]{2}(?:-[A-Z]{2})?$/.test(code)||!catalog?.messages)throw Error('Invalid locale catalog');catalogs.set(code,catalog);buildPatterns();},t,message,apply,refreshGenerated,setLocale,get locale(){return catalogs.has(locale)?locale:'en'},get locales(){return [...catalogs].map(([code,data])=>({code,name:data.name,shortName:data.shortName,meetingLanguage:data.meetingLanguage}));}};
+ const api={register:(code,catalog)=>{if(!/^[a-z]{2}(?:-[A-Z]{2})?$/.test(code)||!catalog?.messages)throw Error('Invalid locale catalog');catalogs.set(code,catalog);if(!initialized)locale=initialLocale();buildPatterns();},t,message,apply,refreshGenerated,setLocale,get locale(){return catalogs.has(locale)?locale:'en'},get locales(){return [...catalogs].map(([code,data])=>({code,name:data.name,shortName:data.shortName,meetingLanguage:data.meetingLanguage}));}};
  root.VaultI18n=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(globalThis);

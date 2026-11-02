@@ -5,7 +5,7 @@ if (((location.protocol === 'file:' && location.pathname.endsWith('/meeting.html
   let registrationTimer;
   document.addEventListener('DOMContentLoaded',()=>{
     if(location.protocol!=='file:')return;
-    const register=document.createElement('button');register.id='register-local-page';register.textContent='Register this meeting page';
+    const register=document.createElement('button');register.id='register-local-page';register.dataset.i18n='registerFileButton';register.textContent=VaultI18n.t('registerFileButton');
     document.querySelector('.app-header').after(register);
     const registrationStatus=document.createElement('p');registrationStatus.id='registration-status';registrationStatus.setAttribute('role','status');register.after(registrationStatus);
     register.addEventListener('click',()=>{

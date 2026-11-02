@@ -2,19 +2,19 @@
 
 // Prevent keystrokes from reaching an official chat immediately after foregrounding; shared by all providers.
 (() => {
-  const VERSION = '0.7.4';
+  const VERSION = '0.7.5';
   let requestId = null, banner = null, timer;
   function release() {
     clearTimeout(timer);
     requestId = null;
     banner?.remove(); banner = null;
   }
-  function render() {
-    if (banner) return;
+  function render(text) {
+    if (banner) { banner.textContent=text; return; }
     banner = document.createElement('div');
     banner.setAttribute('role', 'status');
     banner.style.cssText = 'position:fixed;bottom:8px;left:8px;z-index:2147483647;max-width:calc(100vw - 32px);padding:10px;background:#fff4cf;color:#332800;border:1px solid #ab9440;border-radius:8px;font:13px/1.5 system-ui;box-shadow:0 2px 8px #0003';
-    banner.textContent = '会議から操作中：誤入力を防ぐためキー入力を保護しています。';
+    banner.textContent = text;
     document.documentElement.append(banner);
   }
   function block(event) {
@@ -32,7 +32,7 @@
     if (sender.id !== chrome.runtime.id || message?.type !== 'ROUNDTABLE_INPUT_GUARD') return;
     if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId)) return;
     if (message.lock === true) {
-      clearTimeout(timer); requestId = message.requestId; render();
+      clearTimeout(timer); requestId = message.requestId; render(typeof message.guardText==='string'&&message.guardText.trim()&&message.guardText.length<=500?message.guardText:'Meeting in progress: keyboard input is protected to prevent accidental typing.');
       // Release the guard after the response deadline even if the meeting closes without sending an unlock message.
       timer = setTimeout(release, 220000);
     }

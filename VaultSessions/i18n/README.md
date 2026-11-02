@@ -1,6 +1,6 @@
 # VaultSessions localization
 
-English (`en`) is the default. The selected locale is stored under `vaultsessions.locale`. Interface and meeting response languages are synchronized; existing human/AI log bodies are never translated.
+Initial locale is selected from an explicit `?ui=` parameter, a saved manual choice (`vaultsessions.locale.manual`), or the browser language preference list, in that order. Regional language codes match a base-language catalog when available. Unsupported languages fall back to English (`en`). Automatic initialization does not save a manual override. Older `vaultsessions.locale` values are not used for initial selection because older versions also saved automatic choices. Interface and meeting response languages are synchronized; existing human/AI log bodies are never translated.
 
 ## Add a language
 

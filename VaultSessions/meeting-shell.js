@@ -12,10 +12,10 @@
   for(const row of log.querySelectorAll('.entry')){const time=row.querySelector('time');if(time&&row.dataset.time)time.textContent=new Intl.DateTimeFormat(I.locale,{hour:'numeric',minute:'2-digit'}).format(Number(row.dataset.time));}
   if(location.protocol!=='chrome-extension:')reloadExtension.textContent=I.message('会議ページを再読み込み');
  }
- function selectMeetingLanguage(name){const item=lookup(name);if(item){language.value=name;I.setLocale(item.code);}}
+ function selectMeetingLanguage(name,persist=false){const item=lookup(name);if(item){language.value=name;I.setLocale(item.code,{persist});}}
  language.value=language.dataset.restored||locales.find(item=>item.code===I.locale)?.meetingLanguage||'English';
  selectMeetingLanguage(language.value);
- language.addEventListener('change',()=>selectMeetingLanguage(language.value));
+ language.addEventListener('change',()=>selectMeetingLanguage(language.value,true));
  localeSelect.addEventListener('change',()=>{language.value=locales.find(item=>item.code===localeSelect.value).meetingLanguage;language.dispatchEvent(new Event('change',{bubbles:true}));});
  window.addEventListener('vaultsessions-language',refresh);
  window.addEventListener('vaultsessions-restore-language',event=>selectMeetingLanguage(event.detail));

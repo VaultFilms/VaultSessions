@@ -182,9 +182,9 @@ async function locate(provider, message, reload = false) {
   return { tab, hello };
 }
 
-async function inputGuard(tabId, requestId, lock) {
-  const result = await chrome.tabs.sendMessage(tabId, { type: 'ROUNDTABLE_INPUT_GUARD', requestId, lock }, { frameId: 0 });
-  if (lock && (!result?.guarded || result.version !== '0.7.4')) throw new Error('誤入力防止スクリプトが未更新です。拡張本体と3社の公式タブを再読み込みしてください。文章はまだ送信していません。');
+async function inputGuard(tabId, requestId, lock, guardText) {
+  const result = await chrome.tabs.sendMessage(tabId, { type: 'ROUNDTABLE_INPUT_GUARD', requestId, lock, guardText: typeof guardText==='string'&&guardText.length<=500?guardText:undefined }, { frameId: 0 });
+  if (lock && (!result?.guarded || result.version !== '0.7.5')) throw new Error('誤入力防止スクリプトが未更新です。拡張本体と3社の公式タブを再読み込みしてください。文章はまだ送信していません。');
 }
 async function releaseInput(tabId, requestId) {
   try { await inputGuard(tabId, requestId, false); } catch { /* Closed tabs need no recovery */ }
@@ -355,7 +355,7 @@ function handleMeetingMessage(message, sender, respond) {
     sending.add(providerId);
     try {
       const { tab } = await locate(provider, message);
-      if (provider.foreground) await inputGuard(tab.id, message.requestId, true);
+      if (provider.foreground) await inputGuard(tab.id, message.requestId, true, message.guardText);
       let result;
       try {
         if (provider.foreground) await activateProvider(tab);
