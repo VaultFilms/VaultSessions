@@ -1,17 +1,13 @@
 <p align="center"><img src="VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions logo"></p>
 <h1 align="center">VaultSessions</h1>
 
-**An open-source meeting app where humans and their personalized ChatGPT, Gemini, and Claude think together.**
+**An open-source meeting app where humans bring their own ChatGPT, Gemini, and Claude assistants—with their existing personalization and preferences—together to think, discuss, and collaborate.**
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
     <img src="docs/introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
-
-> **Introduction video — coming soon.** This space is reserved for the walkthrough.
-
-<!-- Replace the placeholder above with a linked video thumbnail when the video is published. -->
 
 ## Features
 
