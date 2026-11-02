@@ -1,23 +1,23 @@
-<p align="center">
-  <a href="../README.md"><img src="https://img.shields.io/badge/English-EN-2563eb?style=for-the-badge" alt="English"></a>
-  <a href="docs/README.ja.md"><img src="https://img.shields.io/badge/Japanese-JA-2563eb?style=for-the-badge" alt="日本語"></a>
-  <a href="docs/README.fr.md"><img src="https://img.shields.io/badge/French-FR-2563eb?style=for-the-badge" alt="Français"></a>
-  <a href="docs/README.de.md"><img src="https://img.shields.io/badge/German-DE-2563eb?style=for-the-badge" alt="Deutsch"></a>
-  <a href="docs/README.es.md"><img src="https://img.shields.io/badge/Spanish-ES-2563eb?style=for-the-badge" alt="Español"></a>
-  <a href="docs/README.it.md"><img src="https://img.shields.io/badge/Italian-IT-2563eb?style=for-the-badge" alt="Italiano"></a>
-  <a href="docs/README.id.md"><img src="https://img.shields.io/badge/Indonesian-ID-2563eb?style=for-the-badge" alt="Bahasa Indonesia"></a>
-  <a href="docs/README.pt-BR.md"><img src="https://img.shields.io/badge/Portuguese-BR-2563eb?style=for-the-badge" alt="Português (Brasil)"></a>
-  <a href="docs/README.hi.md"><img src="https://img.shields.io/badge/Hindi-HI-2563eb?style=for-the-badge" alt="हिन्दी"></a>
-</p>
-
 <p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessionsのロゴ"></p>
 <h1 align="center">VaultSessions</h1>
 
 **普段使っているChatGPT・Gemini・Claudeを、それぞれのパーソナライズや好みを保ったまま会議に招き、人間とAIが一緒に考え、議論し、協働できるオープンソースの会議アプリです。**
 
 <p align="center">
+  <a href="../README.md">English</a> |
+  <a href="README.ja.md">日本語</a> |
+  <a href="README.fr.md">Français</a> |
+  <a href="README.de.md">Deutsch</a> |
+  <a href="README.es.md">Español</a> |
+  <a href="README.it.md">Italiano</a> |
+  <a href="README.id.md">Indonesia</a> |
+  <a href="README.pt-BR.md">Português</a> |
+  <a href="README.hi.md">हिन्दी</a>
+</p>
+
+<p align="center">
   <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
-    <img src="../docs/introduction-compact.gif" alt="VaultSessionsのデモ動画" width="700">
+    <img src="introduction-compact.gif" alt="VaultSessionsのデモ動画" width="700">
   </a>
 </p>
 
@@ -30,7 +30,7 @@
 - **現在のページを共有。** 必要に応じて、ページから取得した本文を会議資料として渡せます。
 - **要約とコピー。** 後から振り返ったり、次の会議へ引き継いだりするための要約を作成できます。
 - **サイドバーと全画面表示。** 表示形式の切り替え、参加者欄の折りたたみ、ログの文字サイズ変更に対応しています。
-- **英語・日本語に対応。** 基本言語は英語です。翻訳カタログを追加して対応言語を増やせます。ダークモードはブラウザ・システムの設定に従います。
+- **9言語に対応。** 英語、日本語、フランス語（フランス）、ドイツ語（ドイツ）、スペイン語（アメリカ合衆国）、イタリア語、インドネシア語、ポルトガル語（ブラジル）、ヒンディー語に対応しています。初回はブラウザの優先言語から選び、未対応なら英語を使用します。手動の言語選択は保存されます。ダークモードはブラウザ・システムの設定に従います。
 
 VaultSessionsは、異なるAIの文脈や個性と、人間の視点を一つの議論に持ち込む会議インターフェースの概念実証です。OpenAI、Google、Anthropicとの提携関係はなく、各社からの承認・推奨を受けたものでもありません。
 
@@ -119,7 +119,7 @@ VaultSessionsは、ブラウザ内で画像を公式AIタブに渡します。�
 
 ソースコードの静的確認では、明示的な `fetch` は、任意のlocalhostモードで `http://127.0.0.1:8766/meeting.html` を確認する1か所でした。独立した解析クライアント、外部スクリプト・CDNのローダー、外部AI APIの直接呼び出しは確認されていません。これはソースコード上の確認であり、**通信を記録した実測監査ではなく、外部通信がないという主張でもありません。**
 
-ページ共有には、ログイン済みページに表示される非公開情報が含まれる可能性があります。共有したくないページでは無効にしてください。URLのクエリ文字列を除去しても、ページ本文の個人情報は除去されません。権限・データの流れ・セキュリティ報告方法については、[SECURITY.md](SECURITY.md)を参照してください。
+ページ共有には、ログイン済みページに表示される非公開情報が含まれる可能性があります。共有したくないページでは無効にしてください。URLのクエリ文字列を除去しても、ページ本文の個人情報は除去されません。権限・データの流れ・セキュリティ報告方法については、[SECURITY.md](../SECURITY.md)を参照してください。
 
 **VaultSessionsは、ログイン済みの各社公式AIサイトを自動操作します。各社の利用規約やアカウントに関する規則に抵触する可能性があります。適用される規約を確認し、自己責任で利用してください。各社の画面・ブラウザAPI・機能・規約が変更されると、動作しなくなったり、利用を中止する必要が生じたりする場合があります。** CAPTCHAや利用回数制限は回避しません。オープンソースであることは、独立した監査が実施済みであることや、安全性を保証するものではありません。
 
@@ -131,11 +131,11 @@ VaultSessionsは、ブラウザ内で画像を公式AIタブに渡します。�
 
 人間とAIが一緒に考える、より良い方法をつくっていきましょう。
 
-この配布物には内部テストスイートを含みません。変更を提案する際、特に各社のDOM操作処理を修正する場合は、動作確認の手順も記載してください。言語を追加する方法は、[VaultSessions/i18n/README.md](VaultSessions/i18n/README.md)を参照してください。
+この配布物には内部テストスイートを含みません。変更を提案する際、特に各社のDOM操作処理を修正する場合は、動作確認の手順も記載してください。言語を追加する方法は、[VaultSessions/i18n/README.md](../VaultSessions/i18n/README.md)を参照してください。
 
 ## ライセンス
 
-[MIT](LICENSE) — Copyright (c) 2026 VaultFilms.
+[MIT](../LICENSE) — Copyright (c) 2026 VaultFilms.
 
 本ソフトウェアは**現状のまま、無保証**で提供されます。再配布の際は、著作権表示・許諾文・免責事項を保持してください。このライセンスは、第三者サービスの利用規約を無視する権利を与えるものではありません。
 
