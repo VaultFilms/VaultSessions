@@ -4,7 +4,7 @@
 **An open-source meeting app where humans and their personalized ChatGPT, Gemini, and Claude think together.**
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=AN_3TevWWRk" target="_blank" rel="noopener noreferrer">
+  <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
     <img src="docs/introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
