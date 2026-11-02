@@ -10,14 +10,14 @@
   <a href="docs/README.hi.md"><img src="https://img.shields.io/badge/Hindi-HI-2563eb?style=for-the-badge" alt="हिन्दी"></a>
 </p>
 
-<p align="center"><img src="VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessionsのロゴ"></p>
+<p align="center"><img src="../VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessionsのロゴ"></p>
 <h1 align="center">VaultSessions</h1>
 
 **普段使っているChatGPT・Gemini・Claudeを、それぞれのパーソナライズや好みを保ったまま会議に招き、人間とAIが一緒に考え、議論し、協働できるオープンソースの会議アプリです。**
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
-    <img src="docs/introduction-compact.gif" alt="VaultSessionsのデモ動画" width="700">
+    <img src="../docs/introduction-compact.gif" alt="VaultSessionsのデモ動画" width="700">
   </a>
 </p>
 
