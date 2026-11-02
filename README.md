@@ -1,19 +1,19 @@
-<p align="center">
-  <a href="README.md"><img src="https://img.shields.io/badge/English-EN-2563eb?style=for-the-badge" alt="English"></a>
-  <a href="docs/README.ja.md"><img src="https://img.shields.io/badge/Japanese-JA-2563eb?style=for-the-badge" alt="日本語"></a>
-  <a href="docs/README.fr.md"><img src="https://img.shields.io/badge/French-FR-2563eb?style=for-the-badge" alt="Français"></a>
-  <a href="docs/README.de.md"><img src="https://img.shields.io/badge/German-DE-2563eb?style=for-the-badge" alt="Deutsch"></a>
-  <a href="docs/README.es.md"><img src="https://img.shields.io/badge/Spanish-ES-2563eb?style=for-the-badge" alt="Español"></a>
-  <a href="docs/README.it.md"><img src="https://img.shields.io/badge/Italian-IT-2563eb?style=for-the-badge" alt="Italiano"></a>
-  <a href="docs/README.id.md"><img src="https://img.shields.io/badge/Indonesian-ID-2563eb?style=for-the-badge" alt="Bahasa Indonesia"></a>
-  <a href="docs/README.pt-BR.md"><img src="https://img.shields.io/badge/Portuguese-BR-2563eb?style=for-the-badge" alt="Português (Brasil)"></a>
-  <a href="docs/README.hi.md"><img src="https://img.shields.io/badge/Hindi-HI-2563eb?style=for-the-badge" alt="हिन्दी"></a>
-</p>
-
 <p align="center"><img src="VaultSessions/icons/leaf-128.png" width="64" height="64" alt="VaultSessions logo"></p>
 <h1 align="center">VaultSessions</h1>
 
 **An open-source meeting app where humans bring their own ChatGPT, Gemini, and Claude assistants—with their existing personalization and preferences—together to think, discuss, and collaborate.**
+
+<p align="center">
+  <a href="README.md">English</a> |
+  <a href="docs/README.ja.md">日本語</a> |
+  <a href="docs/README.fr.md">Français</a> |
+  <a href="docs/README.de.md">Deutsch</a> |
+  <a href="docs/README.es.md">Español</a> |
+  <a href="docs/README.it.md">Italiano</a> |
+  <a href="docs/README.id.md">Indonesia</a> |
+  <a href="docs/README.pt-BR.md">Português</a> |
+  <a href="docs/README.hi.md">हिन्दी</a>
+</p>
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
@@ -30,7 +30,7 @@
 - **Share the current page.** Optionally provide readable page text as meeting reference material.
 - **Summarize and copy.** Generate a summary for your own review or a future meeting.
 - **Sidebar and fullscreen views.** Switch layouts, hide participant controls, and adjust log text size.
-- **English and Japanese.** English is the default; translation catalogs support adding more languages. Dark mode follows the browser/system preference.
+- **Nine interface languages.** English, Japanese, French (France), German (Germany), Spanish (United States), Italian, Indonesian, Portuguese (Brazil), and Hindi. Initial selection follows browser preferences, with English as the fallback; manual choices are remembered. Dark mode follows the browser/system preference.
 
 VaultSessions is a proof of concept for a meeting interface that brings different AI contexts, personalities, and human perspectives into one discussion. It is not affiliated with or endorsed by OpenAI, Google, or Anthropic.
 
