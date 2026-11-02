@@ -11,3 +11,20 @@ Initial locale is selected from an explicit `?ui=` parameter, a saved manual cho
 5. Check translations and plural forms in both meeting layouts.
 
 Plural rules in a catalog use `Intl.PluralRules`. Preserve all named placeholders when translating singular/plural variants. Legacy Japanese status strings and provider selectors are intentionally retained for compatibility with Japanese official chat interfaces. They are not AI instruction prompts.
+
+
+## Included catalogs
+
+| Locale | Interface label | AI response language |
+| --- | --- | --- |
+| en | English | English |
+| ja | 日本語 | Japanese |
+| fr-FR | Français (France) | French as used in France |
+| de-DE | Deutsch (Deutschland) | German as used in Germany |
+| es-US | Español (Estados Unidos) | Spanish as used in the United States |
+| it | Italiano | Italian |
+| id | Bahasa Indonesia | Indonesian |
+| pt-BR | Português (Brasil) | Brazilian Portuguese |
+| hi | हिन्दी | Hindi |
+
+An exact browser locale match takes priority. A matching base language falls back to the included regional variant (for example, `es` selects `es-US`, and `pt-PT` selects the available `pt-BR`). If none of the browser preferences matches a catalog, English is used. Explicit manual choices take priority over browser detection. Contributions and request/pass counts use locale-aware plural forms where applicable. Catalogs translate interface messages, not human/AI log bodies. Normal role, discussion, and summary instructions remain English and ask for the selected response language.

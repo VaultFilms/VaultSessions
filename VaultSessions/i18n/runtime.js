@@ -11,7 +11,7 @@
   if(typeof code!=='string')return null;
   const normalized=code.replace(/_/g,'-').toLowerCase();
   return [...catalogs.keys()].find(key=>key.toLowerCase()===normalized)
-    || [...catalogs.keys()].find(key=>key.toLowerCase()===normalized.split('-')[0])||null;
+    || [...catalogs.keys()].find(key=>key.toLowerCase().split('-')[0]===normalized.split('-')[0])||null;
  }
  function initialLocale(){
   return supported(requested)||supported(manual)||browserLanguages.map(supported).find(Boolean)||'en';
