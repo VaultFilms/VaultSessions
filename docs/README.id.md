@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
+  <a href="https://www.youtube.com/watch?v=89KXgu_0Fm8">
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
@@ -64,6 +64,8 @@ VaultSessions/
 Gunakan Chrome versi terbaru. Versi minimum dalam manifest adalah Chrome 116, tetapi kompatibilitas API browser dan antarmuka penyedia dapat berbeda. Rapat biasa tidak memerlukan proses build atau server.
 
 Setelah memperbarui berkas, muat ulang ekstensi, tab resmi AI, dan tampilan rapat.
+
+**Dukungan Windows:** Petunjuk penyiapan dan skrip peluncur untuk Windows tersedia, tetapi VaultSessions belum diuji pada komputer Windows. Fokus jendela, input IME, penempelan gambar dari papan klip, serta peralihan antara bilah sisi dan layar penuh masih perlu diverifikasi di Windows.
 
 ### Tampilan diperluas tanpa server
 

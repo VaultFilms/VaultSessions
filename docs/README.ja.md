@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
+  <a href="https://www.youtube.com/watch?v=89KXgu_0Fm8">
     <img src="introduction-compact.gif" alt="VaultSessionsのデモ動画" width="700">
   </a>
 </p>
@@ -64,6 +64,8 @@ VaultSessions/
 最新のChromeをご利用ください。マニフェスト上の最低バージョンはChrome 116ですが、ブラウザAPIや各社の画面との互換性は環境によって異なります。通常の会議にはビルド作業やサーバーの起動は必要ありません。
 
 ファイルを更新した後は、拡張機能、各AIの公式タブ、会議画面を再読み込みしてください。
+
+**Windows対応について：** Windows向けの手順と起動スクリプトを用意していますが、Windows実機ではまだ検証していません。ウィンドウのフォーカス、IME入力、クリップボードからの画像貼り付け、サイドバーと全画面の切り替えは、Windowsでの確認が必要です。
 
 ### サーバー不要の全画面表示
 

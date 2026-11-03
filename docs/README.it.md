@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
+  <a href="https://www.youtube.com/watch?v=89KXgu_0Fm8">
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
@@ -64,6 +64,8 @@ VaultSessions/
 Usa una versione recente di Chrome. Il minimo dichiarato nel manifest è Chrome 116, ma la compatibilità delle API del browser e delle interfacce dei fornitori può variare. Per le normali riunioni non servono compilazione né server.
 
 Dopo un aggiornamento, ricarica l’estensione, le schede ufficiali delle IA e la vista della riunione.
+
+**Supporto Windows:** Sono inclusi istruzioni e uno script di avvio per Windows, ma VaultSessions non è ancora stato testato su un computer Windows. Il focus delle finestre, l’input IME, l’inserimento di immagini dagli appunti e il passaggio tra barra laterale e schermo intero devono ancora essere verificati su Windows.
 
 ### Vista estesa senza server
 

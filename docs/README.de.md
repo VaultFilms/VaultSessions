@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
+  <a href="https://www.youtube.com/watch?v=89KXgu_0Fm8">
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
@@ -64,6 +64,8 @@ VaultSessions/
 Verwenden Sie eine aktuelle Chrome-Version. Das Manifest verlangt mindestens Chrome 116; die Kompatibilität mit Browser-APIs und Anbieteroberflächen kann jedoch variieren. Für normale Besprechungen sind weder ein Build-Schritt noch ein Server nötig.
 
 Laden Sie nach einem Update die Erweiterung, die offiziellen KI-Tabs und die Besprechungsansicht neu.
+
+**Windows-Unterstützung:** Eine Windows-Anleitung und ein Startskript sind enthalten, VaultSessions wurde jedoch noch nicht auf einem Windows-Rechner getestet. Fensterfokus, IME-Eingabe, das Einfügen von Bildern aus der Zwischenablage und der Wechsel zwischen Seitenleiste und Vollbild müssen unter Windows noch geprüft werden.
 
 ### Erweiterte Ansicht ohne Server
 
