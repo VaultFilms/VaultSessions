@@ -1,11 +1,12 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.8.3';
+  const VERSION = '0.8.4';
   // DOM verified on the signed-in Gemini website on 2026-10-29.
   const EDITORS = ['.ql-editor[contenteditable="true"][role="textbox"]'];
-  const SEND = 'button[aria-label="プロンプトを送信"], button[aria-label="Send message"], button[aria-label="Send prompt"]';
-  const STOP = 'button[aria-label="回答を停止"], button[aria-label="応答を停止"], button[aria-label="生成を停止"], button[aria-label="Stop response"], button[aria-label="Stop generating"]';
+  const SEND = "button.send-button, button[aria-label=\"プロンプトを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
+  const STOP = "button.stop-button, button[aria-label=\"回答を停止\"], button[aria-label=\"応答を停止\"], button[aria-label=\"生成を停止\"], button[aria-label=\"Stop response\"], button[aria-label=\"Stop generating\"], button[aria-label=\"Arrêter la réponse\"], button[aria-label=\"Arrêter la génération\"], button[aria-label=\"Generierung beenden\"], button[aria-label=\"Antwort stoppen\"], button[aria-label=\"Generierung stoppen\"], button[aria-label=\"Detener respuesta\"], button[aria-label=\"Detener generación\"], button[aria-label=\"Interrompi risposta\"], button[aria-label=\"Interrompi generazione\"], button[aria-label=\"Hentikan respons\"], button[aria-label=\"Hentikan jawaban\"], button[aria-label=\"Hentikan pembuatan\"], button[aria-label=\"Parar resposta\"], button[aria-label=\"Interromper resposta\"], button[aria-label=\"Parar de gerar\"], button[aria-label=\"जवाब रोकें\"], button[aria-label=\"उत्तर रोकें\"], button[aria-label=\"जनरेट करना बंद करें\"]";
+  const COPY = "copy-button button, button.copy-button, button[data-test-id=\"copy-button\"], button[aria-label=\"コピー\"], button[aria-label=\"Copy\"], button[aria-label=\"Copy response\"], button[aria-label=\"Copier\"], button[aria-label=\"Copier la réponse\"], button[aria-label=\"Kopieren\"], button[aria-label=\"Antwort kopieren\"], button[aria-label=\"Copiar\"], button[aria-label=\"Copiar respuesta\"], button[aria-label=\"Copia\"], button[aria-label=\"Copia risposta\"], button[aria-label=\"Salin\"], button[aria-label=\"Salin respons\"], button[aria-label=\"Salin jawaban\"], button[aria-label=\"Copiar resposta\"], button[aria-label=\"कॉपी करें\"], button[aria-label=\"जवाब कॉपी करें\"], button[aria-label=\"उत्तर कॉपी करें\"]";
   const USER_MESSAGE = 'user-query';
   const ASSISTANT = 'model-response [id^="model-response-message-content"]';
   let busy = false;
@@ -113,7 +114,7 @@
         if (text !== job.text) { job.text = text; lastChange = Date.now(); }
         if (text) job.phase = 'streaming';
         const model = reply.closest('model-response');
-        const copy = model?.querySelector('button[aria-label="コピー"], button[aria-label="Copy"], button[aria-label="Copy response"]');
+        const copy = model?.querySelector(COPY);
         const completed = reply.getAttribute('aria-busy') === 'false' && visible(copy) && !copy.disabled;
         // Require this response to expose a copy action and clear its busy state; stable text alone is insufficient.
         if ((text || silent) && completed && !generating() && Date.now() - lastChange >= 1200) {
@@ -207,7 +208,7 @@
       (user.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING)
       && (!next || (element.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING))).at(-1);
     if (!reply) return { ok: true, recovered: false };
-    const copy = reply.closest('model-response')?.querySelector('button[aria-label="コピー"], button[aria-label="Copy"], button[aria-label="Copy response"]');
+    const copy = reply.closest('model-response')?.querySelector(COPY);
     const completed = reply.getAttribute('aria-busy') === 'false' && visible(copy) && !copy.disabled;
     return { ok: true, recovered: !!completed, url: location.origin + location.pathname };
   }

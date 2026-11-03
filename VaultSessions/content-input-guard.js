@@ -2,7 +2,9 @@
 
 // Prevent keystrokes from reaching an official chat immediately after foregrounding; shared by all providers.
 (() => {
-  const VERSION = '0.7.5';
+  const VERSION = '0.7.6';
+  // Longer than the complete send/attachment budget; renewed by response polling.
+  const LEASE_MS = 120000;
   let requestId = null, banner = null, timer;
   function release() {
     clearTimeout(timer);
@@ -32,11 +34,17 @@
     if (sender.id !== chrome.runtime.id || message?.type !== 'ROUNDTABLE_INPUT_GUARD') return;
     if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId)) return;
     if (message.lock === true) {
-      clearTimeout(timer); requestId = message.requestId; render(typeof message.guardText==='string'&&message.guardText.trim()&&message.guardText.length<=500?message.guardText:'Meeting in progress: keyboard input is protected to prevent accidental typing.');
-      // Release the guard after the response deadline even if the meeting closes without sending an unlock message.
-      timer = setTimeout(release, 220000);
+      // A delayed poll must never replace a newer request's protection or revive an expired lease.
+      if (message.renew === true && requestId !== message.requestId) {
+        respond({ ok: true, guarded: false, version: VERSION });
+        return;
+      }
+      clearTimeout(timer); requestId = message.requestId;
+      if (message.renew !== true) render(typeof message.guardText==='string'&&message.guardText.trim()&&message.guardText.length<=500?message.guardText:'Meeting in progress: keyboard input is protected to prevent accidental typing.');
+      // If the meeting disappears, no more polls arrive and protection expires automatically.
+      timer = setTimeout(release, LEASE_MS);
     }
     else if (requestId === message.requestId) release();
-    respond({ ok: true, guarded: true, version: VERSION });
+    respond({ ok: true, guarded: requestId === message.requestId, version: VERSION });
   });
 })();

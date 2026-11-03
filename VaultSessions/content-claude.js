@@ -1,12 +1,12 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.6';
+  const VERSION = '0.9.7';
   // Input, sending, and a test response were verified in signed-in Claude on 2026-10-29.
   const EDITORS = ['[data-testid="chat-input"][contenteditable="true"]'];
-  const SEND = 'button[data-testid="chat-input-send"], button[aria-label="メッセージを送信"], button[aria-label="Send message"]';
+  const SEND = "button[data-testid=\"chat-input-send\"], button[aria-label=\"メッセージを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
   // Stop selectors are compatibility fallbacks; prefer the response data-is-streaming attribute for completion.
-  const STOP = 'button[data-testid="chat-input-stop"], button[aria-label="応答を停止"], button[aria-label="Stop response"]';
+  const STOP = "button[data-testid=\"chat-input-stop\"], button[aria-label=\"応答を停止\"], button[aria-label=\"Stop response\"], button[aria-label=\"Arrêter la réponse\"], button[aria-label=\"Arrêter la génération\"], button[aria-label=\"Generierung beenden\"], button[aria-label=\"Antwort stoppen\"], button[aria-label=\"Generierung stoppen\"], button[aria-label=\"Detener respuesta\"], button[aria-label=\"Detener generación\"], button[aria-label=\"Interrompi risposta\"], button[aria-label=\"Interrompi generazione\"], button[aria-label=\"Hentikan respons\"], button[aria-label=\"Hentikan jawaban\"], button[aria-label=\"Hentikan pembuatan\"], button[aria-label=\"Parar resposta\"], button[aria-label=\"Interromper resposta\"], button[aria-label=\"Parar de gerar\"], button[aria-label=\"जवाब रोकें\"], button[aria-label=\"उत्तर रोकें\"], button[aria-label=\"जनरेट करना बंद करें\"]";
   const USER_MESSAGE = '[data-testid="user-message"]';
   const ASSISTANT = '[data-testid="assistant-message"]';
   let busy = false;

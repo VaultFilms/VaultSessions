@@ -57,9 +57,11 @@ if (((location.protocol === 'file:' && location.pathname.endsWith('/meeting.html
     const item = pending.get(data.id);
     if (item) { pending.delete(data.id); clearTimeout(item.timer); item.resolve(data.result); }
   });
+  // Allow the complete attachment/editor/send-confirmation budget before timing out.
+  const callTimeout = message => message.type === 'ROUNDTABLE_SEND' && message.images?.length ? 100000 : 28000;
   const call = message => new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
-    const timer = setTimeout(() => { pending.delete(id); reject(Error('AI Roundtable拡張に接続できません。拡張を読み込み、このページを再読み込みしてください。')); }, 28000);
+    const timer = setTimeout(() => { pending.delete(id); reject(Error('AI Roundtable拡張に接続できません。拡張を読み込み、このページを再読み込みしてください。')); }, callTimeout(message));
     pending.set(id, {resolve, timer});
     window.postMessage({channel:'roundtable-unified-web', id, message}, '*');
   });

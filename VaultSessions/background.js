@@ -17,9 +17,9 @@ const VERSION = '0.13.1';
 const BRIDGE_VERSION = '0.5.1';
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const PROVIDERS = {
-  chatgpt: { foreground: true, bridgeVersion: '0.8.6', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
-  gemini: { foreground: true, bridgeVersion: '0.8.3', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
-  claude: { foreground: true, bridgeVersion: '0.9.6', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' }
+  chatgpt: { foreground: true, bridgeVersion: '0.8.7', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
+  gemini: { foreground: true, bridgeVersion: '0.8.4', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
+  claude: { foreground: true, bridgeVersion: '0.9.7', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' }
 };
 const cleanURL = url => url?.split(/[?#]/)[0];
 const sending = new Set();
@@ -182,9 +182,9 @@ async function locate(provider, message, reload = false) {
   return { tab, hello };
 }
 
-async function inputGuard(tabId, requestId, lock, guardText) {
-  const result = await chrome.tabs.sendMessage(tabId, { type: 'ROUNDTABLE_INPUT_GUARD', requestId, lock, guardText: typeof guardText==='string'&&guardText.length<=500?guardText:undefined }, { frameId: 0 });
-  if (lock && (!result?.guarded || result.version !== '0.7.5')) throw new Error('誤入力防止スクリプトが未更新です。拡張本体と3社の公式タブを再読み込みしてください。文章はまだ送信していません。');
+async function inputGuard(tabId, requestId, lock, guardText, renew = false) {
+  const result = await chrome.tabs.sendMessage(tabId, { type: 'ROUNDTABLE_INPUT_GUARD', requestId, lock, renew, guardText: typeof guardText==='string'&&guardText.length<=500?guardText:undefined }, { frameId: 0 });
+  if (lock && (!result?.guarded || result.version !== '0.7.6')) throw new Error('誤入力防止スクリプトが未更新です。拡張本体と3社の公式タブを再読み込みしてください。文章はまだ送信していません。');
 }
 async function releaseInput(tabId, requestId) {
   try { await inputGuard(tabId, requestId, false); } catch { /* Closed tabs need no recovery */ }
@@ -338,6 +338,9 @@ function handleMeetingMessage(message, sender, respond) {
       let result;
       try { result = await deliver(provider, message.tabId, { type: `${provider.prefix}_STATUS`, requestId: message.requestId }); }
       catch (error) { await releaseInput(message.tabId, message.requestId); throw error; }
+      if (provider.foreground && result.ok && ['sending', 'waiting', 'streaming'].includes(result.phase)) {
+        await inputGuard(message.tabId, message.requestId, true, undefined, true);
+      }
       if (provider.foreground && (!result.ok || ['complete', 'error'].includes(result.phase))) {
         await returnToMeeting(provider, message.tabId, message.returnTabId);
         await releaseInput(message.tabId, message.requestId);

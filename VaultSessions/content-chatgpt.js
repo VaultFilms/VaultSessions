@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.8.6';
+  const VERSION = '0.8.7';
   // ProseMirror and the Japanese send label were verified in normal Chat UI on 2026-10-29.
   // English labels, #prompt-textarea, and data-testid are compatibility candidates not verified in that session.
   // Message bodies, IDs, and turn states were verified in the current UI; retain legacy fallbacks.
@@ -10,8 +10,8 @@
     '[contenteditable="true"].ProseMirror[role="textbox"]',
     'textarea#prompt-textarea'
   ];
-  const SEND = 'button[data-testid="send-button"], button[type="submit"][aria-label="送信"], button[type="submit"][aria-label="Send"], button[type="submit"][aria-label="Send prompt"]';
-  const STOP = 'button[data-testid="stop-button"], button[aria-label="Stop generating"], button[aria-label="Stop streaming"], button[aria-label="生成を停止する"], button[aria-label="停止"]';
+  const SEND = "button[data-testid=\"send-button\"], button[type=\"submit\"][aria-label=\"送信\"], button[type=\"submit\"][aria-label=\"Send\"], button[type=\"submit\"][aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
+  const STOP = "button[data-testid=\"stop-button\"], button[aria-label=\"Stop generating\"], button[aria-label=\"Stop streaming\"], button[aria-label=\"生成を停止する\"], button[aria-label=\"停止\"], button[aria-label=\"Arrêter la réponse\"], button[aria-label=\"Arrêter la génération\"], button[aria-label=\"Generierung beenden\"], button[aria-label=\"Antwort stoppen\"], button[aria-label=\"Generierung stoppen\"], button[aria-label=\"Detener respuesta\"], button[aria-label=\"Detener generación\"], button[aria-label=\"Interrompi risposta\"], button[aria-label=\"Interrompi generazione\"], button[aria-label=\"Hentikan respons\"], button[aria-label=\"Hentikan jawaban\"], button[aria-label=\"Hentikan pembuatan\"], button[aria-label=\"Parar resposta\"], button[aria-label=\"Interromper resposta\"], button[aria-label=\"Parar de gerar\"], button[aria-label=\"जवाब रोकें\"], button[aria-label=\"उत्तर रोकें\"], button[aria-label=\"जनरेट करना बंद करें\"]";
   const USER_MESSAGE = '[data-user-message-bubble="true"], [data-message-author-role="user"]';
   const ASSISTANT = '[data-markdown-text-style="assistant-message"], [data-message-author-role="assistant"]';
   let busy = false;
@@ -91,7 +91,7 @@
   function silentRoleSettled(userMessage) {
     const turn = userMessage.closest('[data-talvt-turn-state]');
     const editor = findEditor();
-    const idleAction = [...document.querySelectorAll('button[aria-label="音声会話を開始"], button[aria-label="Start voice mode"], button[aria-label="Start Voice Mode"], button[aria-label="Start voice chat"]')]
+    const idleAction = [...document.querySelectorAll("button[data-testid=\"voice-mode-button\"], button[aria-label=\"音声会話を開始\"], button[aria-label=\"Start voice mode\"], button[aria-label=\"Start Voice Mode\"], button[aria-label=\"Start voice chat\"], button[aria-label=\"Démarrer le mode vocal\"], button[aria-label=\"Sprachmodus starten\"], button[aria-label=\"Iniciar modo de voz\"], button[aria-label=\"Avvia modalità vocale\"], button[aria-label=\"Mulai mode suara\"], button[aria-label=\"Iniciar modo de voz\"], button[aria-label=\"वॉइस मोड शुरू करें\"]")]
       .some(button => visible(button) && !button.disabled && button.getAttribute('aria-disabled') !== 'true');
     return turn?.getAttribute('data-talvt-turn-state') === 'complete' && !!editor
       && !editor.disabled && editor.getAttribute('aria-disabled') !== 'true'
@@ -153,7 +153,7 @@
         if (text) job.phase = 'streaming';
         const turn = reply.closest('[data-talvt-turn-state]');
         const legacyTurn = reply.closest('article, [data-testid^="conversation-turn-"]');
-        const legacyComplete = !turn && legacyTurn?.querySelector('button[data-testid="copy-turn-action-button"], button[aria-label="コピーする"], button[aria-label="Copy"]');
+        const legacyComplete = !turn && legacyTurn?.querySelector("button[data-testid=\"copy-turn-action-button\"], button[aria-label=\"コピーする\"], button[aria-label=\"Copy\"], button[aria-label=\"Copier\"], button[aria-label=\"Copier la réponse\"], button[aria-label=\"Kopieren\"], button[aria-label=\"Antwort kopieren\"], button[aria-label=\"Copiar\"], button[aria-label=\"Copiar respuesta\"], button[aria-label=\"Copia\"], button[aria-label=\"Copia risposta\"], button[aria-label=\"Salin\"], button[aria-label=\"Salin respons\"], button[aria-label=\"Salin jawaban\"], button[aria-label=\"Copiar resposta\"], button[aria-label=\"कॉपी करें\"], button[aria-label=\"जवाब कॉपी करें\"], button[aria-label=\"उत्तर कॉपी करें\"]");
         const completed = turn ? turn.getAttribute('data-talvt-turn-state') === 'complete' : legacyComplete;
         // Wait for a saved URL even if the reply finishes first; otherwise the next turn uses a stale target.
         if ((text || silent) && completed && !pendingPath(path) && !generating() && Date.now() - lastChange >= 1000) {
@@ -270,7 +270,7 @@
     const turn = reply.closest('[data-talvt-turn-state]');
     const legacy = reply.closest('article, [data-testid^="conversation-turn-"]');
     const completed = turn ? turn.getAttribute('data-talvt-turn-state') === 'complete'
-      : !!legacy?.querySelector('button[data-testid="copy-turn-action-button"], button[aria-label="コピーする"], button[aria-label="Copy"]');
+      : !!legacy?.querySelector("button[data-testid=\"copy-turn-action-button\"], button[aria-label=\"コピーする\"], button[aria-label=\"Copy\"], button[aria-label=\"Copier\"], button[aria-label=\"Copier la réponse\"], button[aria-label=\"Kopieren\"], button[aria-label=\"Antwort kopieren\"], button[aria-label=\"Copiar\"], button[aria-label=\"Copiar respuesta\"], button[aria-label=\"Copia\"], button[aria-label=\"Copia risposta\"], button[aria-label=\"Salin\"], button[aria-label=\"Salin respons\"], button[aria-label=\"Salin jawaban\"], button[aria-label=\"Copiar resposta\"], button[aria-label=\"कॉपी करें\"], button[aria-label=\"जवाब कॉपी करें\"], button[aria-label=\"उत्तर कॉपी करें\"]");
     return { ok: true, recovered: !!completed, url: location.origin + location.pathname };
   }
 

@@ -27,7 +27,7 @@
     const area = scope(editor);
     let input = [...document.querySelectorAll('input[type=file]')].find(x => !x.disabled && /image\//i.test(x.accept) && !x.capture && (files.length === 1 || x.multiple));
     if (!input && provider === 'gemini') {
-      const menu = [...document.querySelectorAll('button')].find(x => visible(x) && /アップロードとツール|Upload.*tools|ファイルを追加|Add files/i.test(x.getAttribute('aria-label') || ''));
+      const menu = [...document.querySelectorAll('button')].find(x => visible(x) && /アップロードとツール|Upload.*tools|ファイルを追加|Add files|Importer.*outils|Ajouter des fichiers|Hochladen.*Tools|Dateien hinzufügen|Subir.*herramientas|Añadir archivos|Agregar archivos|Carica.*strumenti|Aggiungi file|Upload.*alat|Unggah.*alat|Tambahkan file|Enviar.*ferramentas|Adicionar arquivos|अपलोड.*टूल|फ़ाइलें जोड़ें/i.test(x.getAttribute('aria-label') || ''));
       if (menu) menu.click();
       input = await wait(() => [...document.querySelectorAll('input[type=file]')].find(x => !x.disabled && /image\//i.test(x.accept) && (files.length === 1 || x.multiple)), 3000);
     }

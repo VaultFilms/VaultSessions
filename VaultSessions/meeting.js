@@ -128,6 +128,11 @@ function syncControls() {
   renderAutomaticCards();
   document.querySelector('#switch-view').disabled = viewSwitching || (controller.running || summaryBusy) || isConnecting() || imageLoading || meetingRestoring;
 }
+// Image delivery can spend 60 seconds attaching files, plus editor/button/receipt waits.
+// Keep the UI deadline beyond the bridge deadline; ordinary calls still fail promptly.
+function requestTimeout(message) {
+  return message.type === 'ROUNDTABLE_SEND' && message.images?.length ? 110000 : 30000;
+}
 async function request(message) {
   if (!globalThis.chrome?.runtime?.id) throw new Error(VaultI18n.t('message_013'));
   let timer;
@@ -136,7 +141,7 @@ async function request(message) {
     result = await Promise.race([
       chrome.runtime.sendMessage({ ...message, clientId: meetingClientId }),
       new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error(VaultI18n.t('message_014'))), 30000);
+        timer = setTimeout(() => reject(new Error(VaultI18n.t('message_014'))), requestTimeout(message));
       })
     ]);
   } finally { clearTimeout(timer); }
