@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=AN_3TevWWRk">
+  <a href="https://www.youtube.com/watch?v=89KXgu_0Fm8">
     <img src="docs/introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
@@ -64,6 +64,8 @@ VaultSessions/
 Use a current Chrome release. The manifest minimum is Chrome 116, but browser API and provider UI compatibility can vary. No build step or server is needed for normal meetings.
 
 After updating, reload the extension, the official AI tabs, and the meeting view.
+
+**Windows support:** Windows setup instructions and a launcher are included, but VaultSessions has not yet been tested on a Windows machine. Window focus, IME input, clipboard image pasting, and sidebar/fullscreen switching still need Windows verification.
 
 ### Fullscreen without a server
 
