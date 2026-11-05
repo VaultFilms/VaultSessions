@@ -16,7 +16,7 @@
   let resultRow;
   try{
    await ensureMeetingAccess();
-   const available=Object.keys(providers).filter(id=>targets[id]&&!connecting.has(id)&&!pendingDepartures.has(id));
+   const available=Object.keys(providers).filter(id=>providerAvailable(id)&&!connecting.has(id)&&!pendingDepartures.has(id));
    if(!available.length)throw Error(VaultI18n.t('summaryNoAI'));
    const rows=[...log.querySelectorAll('.entry')].map(row=>({type:row.dataset.type||((row.classList.contains('failed')||row.classList.contains('pending'))?'summary':undefined),role:row.classList.contains('user')?'user':row.classList.contains('assistant')?'assistant':'system',speaker:row.querySelector('strong')?.textContent,text:row.querySelector('.entry-body')?.textContent||''}));
    const text=RoundtableSummary.prompt(rows,language.value),id=available[Math.floor(Math.random()*available.length)];
@@ -26,7 +26,7 @@
    if(!result.text?.trim())throw Error(VaultI18n.t('summaryEmpty'));
    RoundtableLinks.render(resultRow.body,result.text);decorate(resultRow);
    // Clear the display and regular history only after a successful summary response.
-   for(const row of [...log.querySelectorAll('.entry')])if(row!==resultRow.entry)row.remove();
+   for(const row of [...log.querySelectorAll('.entry')])if(row!==resultRow.entry&&!(row.dataset.type==='image-generation'&&row.dataset.imageTask&&imageJobs?.tasks.has(JSON.parse(row.dataset.imageTask).requestId)))row.remove();
    controller.history=[];controller.seen.clear();runRows.clear();
    scrollToLatest();setStatus('success',VaultI18n.t('summaryDone'));
   }catch(error){if(resultRow){resultRow.entry.remove();if(!log.querySelector('.entry'))empty.hidden=false;}setStatus('error',error.message);}

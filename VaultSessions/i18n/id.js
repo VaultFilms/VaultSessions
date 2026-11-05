@@ -251,6 +251,15 @@ VaultI18n.register("id", {
     "notice_044": "Pilih koneksi untuk {0}.",
     "notice_045": "Simpan draf yang belum dikirim sebelum memuat ulang.",
     "notice_046": "Gambar {0}: {1}",
-    "advanced": "Lanjutan"
+    "advanced": "Lanjutan",
+    "imageJobGenerating": "Membuat gambar",
+    "imageJobWaiting": "Pembuatan gambar berlanjut. Anda dapat berbicara dengan AI lain.",
+    "imageJobComplete": "Gambar siap",
+    "imageJobFailed": "Pembuatan gambar gagal atau melewati batas waktu.",
+    "imageJobBusy": "{name} sedang membuat gambar. Pilih AI lain.",
+    "imageJobOpen": "Buka chat resmi",
+    "imageJobDownload": "Simpan pratinjau",
+    "imageJobPreview": "VS menampilkan pratinjau terkompresi. Buka chat resmi untuk gambar asli.",
+    "imageJobAlt": "Gambar yang dibuat {number}"
   }
 });

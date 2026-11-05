@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.7';
+  const VERSION = '0.10.0';
   // Input, sending, and a test response were verified in signed-in Claude on 2026-10-29.
   const EDITORS = ['[data-testid="chat-input"][contenteditable="true"]'];
   const SEND = "button[data-testid=\"chat-input-send\"], button[aria-label=\"メッセージを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -12,6 +12,8 @@
   let busy = false;
   let job = null;
   let watchTimer = null;
+  let refreshWatch = null;
+  let watchObserver = null;
   const normalize = text => text.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
   const linkURL = url => url.trim().replace(/^<|>$/g, '').replace(/\\+(?=[&()])/g, '');
   const linkText = (label, url) => linkURL(label) === linkURL(url) ? label : `${label}\uFFF0${linkURL(url)}\uFFF1`;
@@ -103,6 +105,8 @@
   function endJob(phase, error) {
     clearInterval(watchTimer);
     watchTimer = null;
+    refreshWatch = null;
+    watchObserver?.disconnect(); watchObserver = null;
     job.phase = phase;
     if (error) job.error = error;
     busy = false;
@@ -117,6 +121,7 @@
     const expectedText = canonicalText(prompt);
     const matches = element => userText(element).includes(receipt) || canonicalText(userText(element)) === expectedText;
     let missingSince = null;
+    let svgSource = '', svgChangedAt = Date.now(), capturing = false;
     const homePath = value => value === '/new' || value === '/';
     const savedPath = value => /^\/chat\/[^/]+\/?$/.test(value);
     function check() {
@@ -151,6 +156,27 @@
         !previousReplies.has(messageKey(element)) &&
         (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
       const reply = replies.at(-1);
+      if (!silent && globalThis.RoundtableClaudeSVG) {
+        const svg = RoundtableClaudeSVG.inspect(reply);
+        if (svg) { job.kind = 'image'; job.phase = 'generating_image'; }
+        if (job.kind === 'image') {
+          if (reply) job.text = bodyText(reply);
+          if (svg?.source !== svgSource) { svgSource = svg?.source; svgChangedAt = Date.now(); }
+          if (svg && reply?.getAttribute('data-is-streaming') === 'false' && !generating() && savedPath(path)
+            && Date.now() - svgChangedAt >= 1200) {
+            if (svg.kind === 'file') { endJob('complete'); return; }
+            if (svg.source && !capturing) {
+              capturing = true;const activeJob = job;
+              RoundtableClaudeSVG.capture(svg.source).then(images => {
+                if (job !== activeJob) return;
+                job.images = images;endJob('complete');
+              },error => {if(job === activeJob)endJob('error',error.message);});
+            }
+          }
+          if (Date.now() - started > 20 * 60 * 1000) endJob('error', 'SVG generation timed out. Check the official chat.');
+          return;
+        }
+      }
       if (reply) {
         const text = bodyText(reply);
         if (text !== job.text) { job.text = text; lastChange = Date.now(); }
@@ -168,6 +194,11 @@
       try { check(); }
       catch { endJob('error', '回答のDOM読み取りに失敗しました。Claude側を確認してください。'); }
     };
+    refreshWatch = tick;
+    if (typeof MutationObserver !== 'undefined') {
+      watchObserver = new MutationObserver(tick);
+      watchObserver.observe(document.body, {subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['data-is-streaming']});
+    }
     watchTimer = setInterval(tick, 300);
     tick();
   }
@@ -178,7 +209,7 @@
     const receipt = `Roundtable receipt: ${crypto.randomUUID()} (tracking only; do not repeat)`;
     text += `\n\n${receipt}`;
     busy = true;
-    job = { requestId, phase: 'sending', text: '', url: location.origin + location.pathname };
+    job = { requestId, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
     let clicked = false;
     let watching = false;
     try {
@@ -252,6 +283,32 @@
     return { ok: true, recovered: !!completed, url: location.origin + location.pathname };
   }
 
+  async function imageResult(requestId) {
+    if (job?.requestId !== requestId || job.kind !== 'image' || job.phase !== 'complete') return {ok:false,error:'The SVG image is not ready.'};
+    const users=userBodies(), user=users.findLast(element=>userText(element).includes(job.receipt));
+    if(!user||user!==users.at(-1)||job.url!==location.origin+location.pathname)throw Error('The SVG conversation has changed.');
+    if(job.images)return {ok:true,images:job.images,text:job.text,url:job.url};
+    const reply=assistantBodies().filter(element=>user.compareDocumentPosition(element)&Node.DOCUMENT_POSITION_FOLLOWING).at(-1);
+    const svg=RoundtableClaudeSVG.inspect(reply);
+    if(svg?.kind!=='file')throw Error('The generated SVG file is no longer available.');
+    if(!job.previewPrepared){
+      const old=[...document.querySelectorAll('iframe')].filter(frame=>frame.src.startsWith('https://www.claudeusercontent.com'));
+      for(const frame of old){
+        const close=frame.closest('[role="group"]')?.querySelector('button[aria-label="Close"],button[aria-label="閉じる"]');
+        if(!close)throw Error('Close the previous Claude file preview before retrieving this SVG.');
+        close.click();
+      }
+      if(old.length&&!await waitFor(()=>old.every(frame=>!frame.isConnected),5000))return {ok:true,pending:true};
+      svg.element.click();job.previewPrepared=true;
+    }
+    const frame=[...document.querySelectorAll('iframe')].find(element=>{
+      try{const url=new URL(element.src);return url.origin==='https://www.claudeusercontent.com'&&url.searchParams.get('contentType')==='image/svg+xml';}catch{return false;}
+    });
+    if(!frame)return {ok:true,pending:true};
+    frame.loading='eager';
+    return {ok:true,needsFrame:true,text:job.text,url:job.url};
+  }
+
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
     if (message?.type === 'ROUNDTABLE_CLAUDE_HELLO') {
@@ -259,9 +316,12 @@
       return;
     }
     if (message?.type === 'ROUNDTABLE_CLAUDE_RECOVER_ROLE') { sendResponse(recoverRole(message.text)); return; }
+    if (message?.type === 'ROUNDTABLE_CLAUDE_IMAGE_RESULT') { imageResult(message.requestId).then(sendResponse,error=>sendResponse({ok:false,error:error.message})); return true; }
     if (message?.type === 'ROUNDTABLE_CLAUDE_STATUS') {
+      if (job?.requestId === message.requestId) refreshWatch?.();
+      const {images: cachedImages, ...state} = job || {};
       sendResponse(job?.requestId === message.requestId
-        ? { ok: true, ...job }
+        ? { ok: true, ...state }
         : { ok: false, error: '回答の取得状態が見つかりません。Claudeを再読み込みした場合は取得が中断されます。' });
       return;
     }

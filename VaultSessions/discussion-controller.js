@@ -105,8 +105,8 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
     return value;
   };
   class DiscussionController {
-    constructor({ order, names, getTarget, exchange, roleState, recoverRole = async () => false, onEvent = () => {}, languageNames = ['English','Japanese'] }) {
-      Object.assign(this, { order, names, getTarget, exchange, roleState, recoverRole, onEvent });
+    constructor({ order, names, getTarget, exchange, roleState, recoverRole = async () => false, isAvailable = () => true, onEvent = () => {}, languageNames = ['English','Japanese'] }) {
+      Object.assign(this, { order, names, getTarget, exchange, roleState, recoverRole, isAvailable, onEvent });
       this.languageNames=languageNames.filter(name=>typeof name==='string'&&/^[A-Za-z][A-Za-z -]{1,49}$/.test(name));
       this.history = []; this.seen = new Map(); this.serial = 0;
       this.material = null; this.materialSeen = new Map(); this.capturedPages = new Set();
@@ -163,6 +163,13 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
         await this.roleState('complete', id, target, { requestId, revision, finalUrl: this.getTarget(id).conversationUrl });
         this.emit('role', { provider: id, state: 'ready' });
       } catch (error) {
+        // A silent role may have reached an idle composer just as response collection timed out.
+        // Recheck delivered instructions before declaring failure; this never sends another message.
+        try {
+          if (await this.recoverRole(id, prompt)) {
+            this.emit('role', { provider: id, state: 'ready' }); return;
+          }
+        } catch { /* Preserve the original failure when verification is unavailable. */ }
         // Never resend uncertain role instructions automatically; recovery requires an explicit user action.
         try { await this.roleState('failed', id, target, { requestId, revision }); } catch { /* Preserve the original error */ }
         this.emit('role', { provider: id, state: 'error', error: error.message });
@@ -201,12 +208,12 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
     }
     submit({ text, first, automatic, maxSpeeches = 3, maxQueries = 6, language = 'Japanese', images = [] }) {
       if (typeof text !== 'string' || !text.trim() || text.length > 20000) throw new Error('発言は1〜20,000文字で入力してください。');
-      if (!this.order.includes(first) || !this.getTarget(first)) throw new Error('最初の回答者を招待してください。');
+      if (!this.order.includes(first) || !this.getTarget(first) || !this.isAvailable(first)) throw new Error('最初の回答者を招待してください。');
       if (!this.languageNames.includes(language)) throw new Error('会議言語が不正です。');
       limit(maxSpeeches, 100, '最大発言回数'); limit(maxQueries, 300, '最大問い合わせ回数');
       const attachments = Images.validate(images);
       // Avoid self-replies with one participant; infer discussion mode from participant count unless explicitly specified.
-      automatic = automatic !== false && this.order.filter(id => this.getTarget(id)).length > 1;
+      automatic = automatic !== false && this.order.filter(id => this.getTarget(id) && this.isAvailable(id)).length > 1;
       const run = { images: attachments, imagesDelivered: new Set(), id: ++this.serial, text, first, automatic, maxSpeeches, maxQueries, language, material: this.material ? { ...this.material } : null, cancelled: false, speeches: 0, queries: 0, passes: 0 };
       if (this.pending) this.emit('withdrawn', { runId: this.pending.id });
       this.pending = run;
@@ -242,7 +249,7 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
       } finally { this.running = false; this.emit('idle'); }
     }
     async run(run) {
-      const connected = this.order.filter(id => this.getTarget(id));
+      const connected = this.order.filter(id => this.getTarget(id) && this.isAvailable(id));
       const index = connected.indexOf(run.first);
       const order = [...connected.slice(index), ...connected.slice(0, index)];
       run.topic = { seq: this.history.length + 1, speaker: 'Human', text: run.text, runId: run.id };
@@ -252,7 +259,10 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
       while (!run.cancelled) {
         if (run.speeches >= run.maxSpeeches) { this.emit('ended', { runId: run.id, reason: 'speech-limit', ...this.counts(run) }); return; }
         if (run.queries >= run.maxQueries) { this.emit('ended', { runId: run.id, reason: 'query-limit', ...this.counts(run) }); return; }
+        const available = order.filter(id => this.getTarget(id) && this.isAvailable(id));
+        if (!available.length) { this.emit('ended', {runId:run.id,reason:'normal',...this.counts(run)}); return; }
         const id = order[turn % order.length];
+        if (!this.isAvailable(id)) { turn++; continue; }
         if (!this.getTarget(id)) throw new Error(`${this.names[id]}の接続が失われました。`);
         await this.ensureRole(id, run.language);
         if (run.cancelled) break;
@@ -267,6 +277,10 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
         run.imagesDelivered.add(id);
         this.remember(id, prompt.through);
         this.rememberMaterial(id, prompt.materialId);
+        if (result.detachedImage) {
+          this.emit('image-detached', {runId:run.id,provider:id,task:result.task,images:result.images});
+          this.emit('ended', {runId:run.id,reason:'normal',...this.counts(run)}); return;
+        }
         if (run.cancelled) { this.emit('discarded', { runId: run.id, provider: id }); break; }
         if (typeof result.text !== 'string' || !result.text.trim()) throw new Error(`${this.names[id]}の回答が空です。`);
         let parsed = run.automatic ? parseReply(result.text) : isPass(result.text) ? { kind: 'pass' } : { kind: 'contribution', text: result.text };
@@ -296,8 +310,8 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
           this.history.push(entry); this.remember(id, entry.seq);
           this.emit('reply', { runId: run.id, provider: id, text: parsed.text, ...this.counts(run) });
         }
-        if (!run.automatic) { this.emit('ended', { runId: run.id, reason: 'normal', ...this.counts(run) }); return; }
-        if (run.passes >= order.length) { this.emit('ended', { runId: run.id, reason: 'all-pass', ...this.counts(run) }); return; }
+        if (!run.automatic || available.length < 2) { this.emit('ended', { runId: run.id, reason: 'normal', ...this.counts(run) }); return; }
+        if (run.passes >= available.length) { this.emit('ended', { runId: run.id, reason: 'all-pass', ...this.counts(run) }); return; }
         turn++;
       }
       this.emit('ended', { runId: run.id, reason: 'stopped', ...this.counts(run) });

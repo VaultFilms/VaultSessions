@@ -1,10 +1,22 @@
 'use strict';
 (function(root){
   const KEY='roundtableMeetingSessionV1';
+  function imageState(row){
+    if(row.type!=='image-generation')return {};
+    const task=row.imageTask;
+    if(!task||!['chatgpt','gemini','claude'].includes(task.provider)||!Number.isInteger(task.tabId)||!Number.isFinite(task.startedAt)||typeof task.requestId!=='string'||!/^[a-zA-Z0-9-]{1,80}$/.test(task.requestId)||typeof task.conversationUrl!=='string'||!(task.provider==='chatgpt'?/^https:\/\/chatgpt\.com\/c\/[^/?#]+\/?$/:task.provider==='gemini'?/^https:\/\/gemini\.google\.com\/(?:u\/\d+\/)?app\/[^/?#]+\/?$/:/^https:\/\/claude\.ai\/chat\/[^/?#]+\/?$/).test(task.conversationUrl))throw Error('Invalid image-generation task.');
+    const images=row.generatedImages||[];
+    if(!Array.isArray(images)||images.length>4)throw Error('Invalid generated-image previews.');
+    const generatedImages=images.map(img=>{
+      if(!img||typeof img.dataUrl!=='string'||img.dataUrl.length>380000||!/^data:image\/(?:webp|png);base64,[A-Za-z0-9+/]+={0,2}$/.test(img.dataUrl)||!Number.isInteger(img.width)||!Number.isInteger(img.height)||img.width<1||img.height<1||img.width>1600||img.height>1600)throw Error('Invalid generated-image preview.');
+      return {dataUrl:img.dataUrl,width:img.width,height:img.height,name:typeof img.name==='string'?img.name.slice(0,100):'generated-image.webp'};
+    });
+    return {imageTask:{provider:task.provider,tabId:task.tabId,requestId:task.requestId,conversationUrl:task.conversationUrl,startedAt:task.startedAt,topic:typeof task.topic==='string'?task.topic.slice(0,1000):'',failed:task.failed===true,resolved:task.resolved===true,state:['complete','error'].includes(task.state)?task.state:'waiting'},generatedImages};
+  }
   function clean(snapshot){
     if(!snapshot||snapshot.version!==1||!Array.isArray(snapshot.rows)||!Array.isArray(snapshot.history))throw Error('会議ログの形式が不正です。');
     if(JSON.stringify(snapshot).length>3000000)throw Error('一時ログの容量上限を超えました。');
-    const rows=snapshot.rows.slice(-500).filter(row=>['user','assistant','system'].includes(row.role)&&typeof row.text==='string'&&row.text.length<=50000&&typeof row.meta==='string'&&(row.role!=='assistant'||['chatgpt','gemini','claude'].includes(row.provider))).map(({role,text,meta,provider,timestamp,type})=>({role,text,meta,provider,...(type==='summary'?{type}:{}),...(Number.isFinite(timestamp)&&timestamp>0?{timestamp}:{})}));
+    const rows=snapshot.rows.slice(-500).filter(row=>['user','assistant','system'].includes(row.role)&&typeof row.text==='string'&&row.text.length<=50000&&typeof row.meta==='string'&&(row.role!=='assistant'||['chatgpt','gemini','claude'].includes(row.provider))).map(row=>{const {role,text,meta,provider,timestamp,type}=row;return {role,text,meta,provider,...imageState(row),...(['summary','image-generation'].includes(type)?{type}:{}),...(Number.isFinite(timestamp)&&timestamp>0?{timestamp}:{})};});
     const history=snapshot.history.slice(-500).filter(item=>item.type!=='summary'&&typeof item.text==='string'&&item.text.length<=50000&&['Human','ChatGPT','Gemini','Claude'].includes(item.speaker)).map((item,index)=>({seq:index+1,text:item.text,speaker:item.speaker,runId:Number.isInteger(item.runId)?item.runId:0}));
     return {version:1,rows,history,serial:Number.isInteger(snapshot.serial)?snapshot.serial:0,settings:snapshot.settings&&typeof snapshot.settings==='object'?snapshot.settings:{},draft:typeof snapshot.draft==='string'?snapshot.draft.slice(0,20000):''};
   }

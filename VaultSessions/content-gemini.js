@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.8.4';
+  const VERSION = '0.9.0';
   // DOM verified on the signed-in Gemini website on 2026-10-29.
   const EDITORS = ['.ql-editor[contenteditable="true"][role="textbox"]'];
   const SEND = "button.send-button, button[aria-label=\"プロンプトを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -12,6 +12,8 @@
   let busy = false;
   let job = null;
   let watchTimer = null;
+  let refreshWatch = null;
+  let watchObserver = null;
   const normalize = text => text.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
   const canonicalText = text => normalize(text).replace(/\s+/g, ' ');
   const visible = element => element?.isConnected && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden";
@@ -53,6 +55,10 @@
     // Exclude duplicate accessibility headings and action buttons from the body.
     return lines.length ? lines.map(line => line.textContent.trim()).join('\n') : '';
   }
+  // A receipt survives rich-text rendering and does not depend on recycled turn IDs.
+  const matchesPrompt = (element, prompt, receipt) => receipt
+    ? userText(element).includes(receipt)
+    : canonicalText(userText(element)) === canonicalText(prompt);
   const assistantBodies = () => [...document.querySelectorAll(ASSISTANT)].filter(element =>
     !element.parentElement?.closest(ASSISTANT));
   const bodyText = element => (element.querySelector('.markdown') || element).innerText.trim();
@@ -60,19 +66,21 @@
   function endJob(phase, error) {
     clearInterval(watchTimer);
     watchTimer = null;
+    refreshWatch = null;
+    watchObserver?.disconnect(); watchObserver = null;
     job.phase = phase;
     if (error) job.error = error;
     busy = false;
   }
 
-  function watchReply(userMessage, previousReplies, previousUserTexts, prompt, silent) {
+  function watchReply(userMessage, previousReplies, previousUserTexts, prompt, silent, receipt) {
     let lastChange = Date.now();
     const started = Date.now();
     let path = location.pathname;
     let userKey = messageKey(userMessage);
     const expectedIndex = previousUserTexts.length;
-    const expectedText = canonicalText(prompt);
     let missingSince = null;
+    let imageReadySince = null, imageSignature = '';
     const homePath = value => /^\/(?:u\/\d+\/)?app\/?$/.test(value) || value === '/';
     const savedPath = value => /^\/(?:u\/\d+\/)?app\/[^/]+\/?$/.test(value);
     function check() {
@@ -82,11 +90,11 @@
       }
       job.url = location.origin + location.pathname;
       const users = userBodies();
-      if (!userMessage.isConnected || canonicalText(userText(userMessage)) !== expectedText) {
-        let same = users.find(element => messageKey(element) === userKey && canonicalText(userText(element)) === expectedText);
+      if (!userMessage.isConnected || !matchesPrompt(userMessage, prompt, receipt)) {
+        let same = users.find(element => messageKey(element) === userKey && matchesPrompt(element, prompt, receipt));
         // Both nodes and IDs can change when an optimistic message is confirmed.
         // Match order and preceding messages as well as text to avoid selecting an older duplicate.
-        if (!same && users[expectedIndex] && canonicalText(userText(users[expectedIndex])) === expectedText
+        if (!same && users[expectedIndex] && matchesPrompt(users[expectedIndex], prompt, receipt)
           && previousUserTexts.every((text, index) => users[index] && canonicalText(userText(users[index])) === text)) {
           same = users[expectedIndex];
         }
@@ -109,6 +117,29 @@
         (!currentTurn || element.closest('.conversation-container') === currentTurn) &&
         (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
       const reply = replies.at(-1);
+      if (!silent && globalThis.RoundtableGeminiImages && globalThis.RoundtableGeneratedImages) {
+        const imageState = RoundtableGeminiImages.inspect(userMessage);
+        if (imageState.markers.length) { job.kind = 'image'; job.phase = 'generating_image'; }
+        if (job.kind === 'image') {
+          const model = reply?.closest('model-response');
+          const copy = model?.querySelector(COPY);
+          const completed = reply?.getAttribute('aria-busy') === 'false' && visible(copy) && !copy.disabled;
+          const signature = imageState.images.map(img => `${img.currentSrc || img.src}:${img.naturalWidth}:${img.naturalHeight}`).join('|');
+          if (signature !== imageSignature) { imageSignature = signature; imageReadySince = null; }
+          if (reply) job.text = bodyText(reply);
+          const failed = imageState.markers.some(node => [...node.querySelectorAll('[role="alert"], [data-error="true"]')].some(visible));
+          if (failed) { endJob('error', 'Image generation failed. Check the official chat.'); return; }
+          if (imageState.images.length && !imageState.loading && completed && !generating() && savedPath(path)) {
+            imageReadySince ??= Date.now();
+            if (Date.now() - imageReadySince >= 2000) {
+              job.images = RoundtableGeneratedImages.capture(imageState.images);
+              endJob('complete'); return;
+            }
+          } else imageReadySince = null;
+          if (Date.now() - started > 20 * 60 * 1000) endJob('error', 'Image generation timed out. Check the official chat.');
+          return;
+        }
+      }
       if (reply) {
         const text = bodyText(reply);
         if (text !== job.text) { job.text = text; lastChange = Date.now(); }
@@ -129,6 +160,11 @@
       try { check(); }
       catch { endJob('error', '回答のDOM読み取りに失敗しました。Gemini側を確認してください。'); }
     };
+    refreshWatch = tick;
+    if (typeof MutationObserver !== 'undefined') {
+      watchObserver = new MutationObserver(tick);
+      watchObserver.observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['class','src','srcset','aria-busy']});
+    }
     watchTimer = setInterval(tick, 300);
     tick();
   }
@@ -136,8 +172,10 @@
   async function send(text, requestId, foreground, silent, images = []) {
     if (busy) throw new Error("このGeminiタブで送信処理中です。");
     if (typeof text !== "string" || !text.trim() || text.length > 20000) throw new Error("入力が空か、20,000文字を超えています。");
+    const receipt = silent ? null : `VSREQUEST${crypto.randomUUID().replace(/-/g, '')}END`;
+    if (receipt) text = `${receipt}\nThis is a delivery identifier, not discussion content. Do not repeat it.\n\n${text}`;
     busy = true;
-    job = { requestId, phase: 'sending', text: '', url: location.origin + location.pathname };
+    job = { requestId, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
     let clicked = false;
     let watching = false;
     try {
@@ -181,12 +219,12 @@
       clicked = true;
       const confirmed = await waitFor(() => {
         return userBodies().find(element =>
-          !previousMessages.has(messageKey(element)) && canonicalText(userText(element)) === canonicalText(text));
+          (receipt || !previousMessages.has(messageKey(element))) && matchesPrompt(element, text, receipt));
       }, 12000);
       if (!confirmed) throw new Error("送信ボタンを押しましたが、送信完了を確認できませんでした。自動再送はしません。Geminiの画面を確認してください。");
       job.phase = 'waiting';
       watching = true;
-      watchReply(confirmed, previousReplies, previousUserTexts, text, silent);
+      watchReply(confirmed, previousReplies, previousUserTexts, text, silent, receipt);
       return { ok: true, requestId, url: job.url };
     } catch (error) {
       job.phase = 'error';
@@ -220,9 +258,24 @@
       return;
     }
     if (message?.type === 'ROUNDTABLE_GEMINI_RECOVER_ROLE') { sendResponse(recoverRole(message.text)); return; }
+    if (message?.type === 'ROUNDTABLE_GEMINI_IMAGE_RESULT') {
+      if (job?.requestId !== message.requestId || job.kind !== 'image' || job.phase !== 'complete') {
+        sendResponse({ok:false,error:'The generated image is not ready.'}); return;
+      }
+      try {
+        const users = userBodies();
+        const user = users.findLast(element => matchesPrompt(element, '', job.receipt));
+        if (!user || user !== users.at(-1)) throw Error('The image conversation has changed. Open the official chat.');
+        const images = job.images || RoundtableGeneratedImages.capture(RoundtableGeminiImages.inspect(user).images);
+        sendResponse({ok:true,images,text:job.text,url:job.url});
+      } catch(error) { sendResponse({ok:false,error:error.message}); }
+      return;
+    }
     if (message?.type === 'ROUNDTABLE_GEMINI_STATUS') {
+      if (job?.requestId === message.requestId) refreshWatch?.();
+      const {images: cachedImages, ...state} = job || {};
       sendResponse(job?.requestId === message.requestId
-        ? { ok: true, ...job }
+        ? { ok: true, ...state }
         : { ok: false, error: '回答の取得状態が見つかりません。Geminiを再読み込みした場合は取得が中断されます。' });
       return;
     }

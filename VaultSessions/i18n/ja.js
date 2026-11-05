@@ -17,8 +17,13 @@ VaultI18n.register("ja", {
     "logFontInvalid": "ログの文字サイズが不正です。",
     "localhostNotReadyError": "localhost版の会議ページの準備ができていません。",
     "registerFileButton": "この会議ページを登録",
-"hideParticipantsPanel":"参加者・設定を隠す","showParticipantsPanel":"参加者・設定を表示",
-"logTextSize":"ログの文字サイズ","logTextSmaller":"ログの文字を小さく","logTextLarger":"ログの文字を大きく","logTextReset":"標準に戻す","logTextSaveError":"ログの文字サイズを保存できませんでした。",
+    "hideParticipantsPanel": "参加者・設定を隠す",
+    "showParticipantsPanel": "参加者・設定を表示",
+    "logTextSize": "ログの文字サイズ",
+    "logTextSmaller": "ログの文字を小さく",
+    "logTextLarger": "ログの文字を大きく",
+    "logTextReset": "標準に戻す",
+    "logTextSaveError": "ログの文字サイズを保存できませんでした。",
     "registerWorking": "会議ページを登録しています…",
     "registerDone": "会議ページを登録しました。再読み込みします…",
     "registerUnavailable": "拡張に接続できません。Chromeの拡張管理で本体のVaultSessionsを再読み込みし、「詳細」で「ファイルのURLへのアクセスを許可する」をONにしてから、このHTMLを再読み込みしてください。別の実験版拡張はOFFにしてください。",
@@ -243,6 +248,15 @@ VaultI18n.register("ja", {
     "notice_044": "{0}の接続先を選択してください。",
     "notice_045": "未送信の下書きは、再読み込み前に控えてください。",
     "notice_046": "画像{0}：{1}",
-    "advanced": "詳細設定"
+    "advanced": "詳細設定",
+    "imageJobGenerating": "画像生成中",
+    "imageJobWaiting": "画像生成を続けています。他のAIとは会話できます。",
+    "imageJobComplete": "画像が完成しました",
+    "imageJobFailed": "画像生成に失敗、またはタイムアウトしました。",
+    "imageJobBusy": "{name}は画像生成中です。他のAIを指定してください。",
+    "imageJobOpen": "公式チャットを開く",
+    "imageJobDownload": "プレビューを保存",
+    "imageJobPreview": "VSには圧縮プレビューを表示しています。元画像は公式チャットで確認してください。",
+    "imageJobAlt": "生成画像 {number}"
   }
 });

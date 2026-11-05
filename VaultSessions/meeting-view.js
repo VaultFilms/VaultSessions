@@ -4,11 +4,23 @@
   switchButton.textContent=VaultI18n.t(isSidePanel?'fullscreen':'sidebar');
   switchButton.title=VaultI18n.t('switchHint');
   const bodyText=node=>!node?'':node.nodeType===3?node.textContent:node.tagName==='A'?`[${node.textContent}](${node.getAttribute('href')})`:[...node.childNodes].map(bodyText).join('');
-  function snapshot(){return {version:1,rows:[...log.querySelectorAll('.entry')].slice(-500).map(row=>({
-    type:row.dataset.type,role:row.classList.contains('assistant')?'assistant':row.classList.contains('user')?'user':'system',
+  function imageState(row){
+    if(row.dataset.type!=='image-generation')return {};
+    let imageTask;try{imageTask=JSON.parse(row.dataset.imageTask);}catch{return {};}
+    return {imageTask,generatedImages:[...row.querySelectorAll('.generated-image-gallery img')].map((img,index)=>({dataUrl:img.src,width:img.width,height:img.height,name:`generated-image-${index+1}.${img.src.startsWith('data:image/webp;')?'webp':'png'}`}))};
+  }
+  function snapshot(){const saved={version:1,rows:[...log.querySelectorAll('.entry')].slice(-500).map(row=>({
+    ...imageState(row),type:row.dataset.type,role:row.classList.contains('assistant')?'assistant':row.classList.contains('user')?'user':'system',
     provider:Object.keys(providers).find(id=>providers[id].name===row.querySelector('strong')?.textContent),
-    text:bodyText(row.querySelector('.entry-body')),meta:row.querySelector('.entry-state')?.textContent||'',timestamp:Number(row.dataset.time)||null
-  })),history:controller.history.slice(-500),serial:controller.serial,draft:input.value,settings:{language:language.value,maxSpeeches:document.querySelector('#max-speeches').value,maxQueries:document.querySelector('#max-queries').value}};}
+    text:row.dataset.type==='image-generation'?'':bodyText(row.querySelector('.entry-body')),meta:row.querySelector('.entry-state')?.textContent||'',timestamp:Number(row.dataset.time)||null
+  })),history:controller.history.slice(-500),serial:controller.serial,draft:input.value,settings:{language:language.value,maxSpeeches:document.querySelector('#max-speeches').value,maxQueries:document.querySelector('#max-queries').value}};
+    // Keep recent previews within the existing snapshot budget; original links remain for older images.
+    let imageBudget=1600000;
+    for(const row of [...saved.rows].reverse())if(row.generatedImages){
+      row.generatedImages=row.generatedImages.filter(img=>{if(img.dataUrl.length>imageBudget)return false;imageBudget-=img.dataUrl.length;return true;});
+    }
+    return saved;
+  }
   function restore(saved){
     if(!saved||!Array.isArray(saved.rows)||!Array.isArray(saved.history))return;
     for(const row of saved.rows){
@@ -16,6 +28,7 @@
       const entry=addEntry(row.role,row.text,row.provider);
       if(row.timestamp){entry.entry.dataset.time=String(row.timestamp);const time=entry.entry.querySelector('time');time.dateTime=new Date(row.timestamp).toISOString();time.textContent=new Intl.DateTimeFormat(VaultI18n.locale,{hour:'numeric',minute:'2-digit'}).format(row.timestamp);}else entry.entry.querySelector('time')?.remove();
       if(row.role==='assistant')RoundtableLinks.render(entry.body,row.text);
+      if(row.type==='image-generation'&&row.imageTask)restoreImageJobRow(entry,row.imageTask,row.generatedImages);
       if(row.type==='summary'){entry.entry.dataset.type='summary';setTimeout(()=>window.dispatchEvent(new CustomEvent('roundtable-summary-restore',{detail:entry})),0);}
       entry.meta.textContent=/回答中|送信中|進行中|送信待ち|Responding|Sending|In progress|Queued/.test(row.meta)?VaultI18n.t('previousDisplay'):uiText(row.meta);
     }

@@ -3,24 +3,24 @@ VaultI18n.register("en", {
   "shortName": "EN",
   "meetingLanguage": "English",
   "plurals": {
-  "message_055": [
-    {
-      "count": "0",
-      "one": "{0} contribution",
-      "other": "{0} contributions"
-    },
-    {
-      "count": "1",
-      "one": "{1} request",
-      "other": "{1} requests"
-    },
-    {
-      "count": "2",
-      "one": "{2} consecutive pass",
-      "other": "{2} consecutive passes"
-    }
-  ]
-},
+    "message_055": [
+      {
+        "count": "0",
+        "one": "{0} contribution",
+        "other": "{0} contributions"
+      },
+      {
+        "count": "1",
+        "one": "{1} request",
+        "other": "{1} requests"
+      },
+      {
+        "count": "2",
+        "one": "{2} consecutive pass",
+        "other": "{2} consecutive passes"
+      }
+    ]
+  },
   "messages": {
     "inputGuardNotice": "Meeting in progress: keyboard input is protected to prevent accidental typing.",
     "pageReferenceClosed": "The reference tab was closed.",
@@ -36,8 +36,13 @@ VaultI18n.register("en", {
     "logFontInvalid": "Invalid log font size.",
     "localhostNotReadyError": "Localhost meeting is not ready.",
     "registerFileButton": "Register this meeting page",
-"hideParticipantsPanel":"Hide participants and settings","showParticipantsPanel":"Show participants and settings",
-"logTextSize":"Log text size","logTextSmaller":"Smaller log text","logTextLarger":"Larger log text","logTextReset":"Reset size","logTextSaveError":"Could not save the log text size.",
+    "hideParticipantsPanel": "Hide participants and settings",
+    "showParticipantsPanel": "Show participants and settings",
+    "logTextSize": "Log text size",
+    "logTextSmaller": "Smaller log text",
+    "logTextLarger": "Larger log text",
+    "logTextReset": "Reset size",
+    "logTextSaveError": "Could not save the log text size.",
     "registerWorking": "Registering meeting page…",
     "registerDone": "Meeting page registered. Reloading…",
     "registerUnavailable": "Cannot reach the extension. In Chrome extensions, reload VaultSessions, open Details and enable Allow access to file URLs, then reload this HTML page. Also disable the separate experimental extension.",
@@ -262,6 +267,15 @@ VaultI18n.register("en", {
     "notice_044": "Select a connection for {0}.",
     "notice_045": "Save any unsent draft before reloading.",
     "notice_046": "Image {0}: {1}",
-    "advanced": "Advanced"
+    "advanced": "Advanced",
+    "imageJobGenerating": "Generating image",
+    "imageJobWaiting": "Image generation is continuing. You can talk to the other AI participants.",
+    "imageJobComplete": "Image ready",
+    "imageJobFailed": "Image generation failed or timed out.",
+    "imageJobBusy": "{name} is generating an image. Please choose another AI.",
+    "imageJobOpen": "Open official chat",
+    "imageJobDownload": "Save preview",
+    "imageJobPreview": "VS shows a compressed preview. Open the official chat for the original image.",
+    "imageJobAlt": "Generated image {number}"
   }
 });

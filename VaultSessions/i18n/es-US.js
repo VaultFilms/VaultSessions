@@ -267,6 +267,15 @@ VaultI18n.register("es-US", {
     "notice_044": "Selecciona una conexión para {0}.",
     "notice_045": "Guarda cualquier borrador antes de recargar.",
     "notice_046": "Imagen {0}: {1}",
-    "advanced": "Avanzado"
+    "advanced": "Avanzado",
+    "imageJobGenerating": "Generando imagen",
+    "imageJobWaiting": "La generación continúa. Puedes conversar con las otras IA.",
+    "imageJobComplete": "Imagen lista",
+    "imageJobFailed": "La generación de la imagen falló o agotó el tiempo de espera.",
+    "imageJobBusy": "{name} está generando una imagen. Elige otra IA.",
+    "imageJobOpen": "Abrir chat oficial",
+    "imageJobDownload": "Guardar vista previa",
+    "imageJobPreview": "VS muestra una vista previa comprimida. Abre el chat oficial para ver la imagen original.",
+    "imageJobAlt": "Imagen generada {number}"
   }
 });

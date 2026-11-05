@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.8.7';
+  const VERSION = '0.9.1';
   // ProseMirror and the Japanese send label were verified in normal Chat UI on 2026-10-29.
   // English labels, #prompt-textarea, and data-testid are compatibility candidates not verified in that session.
   // Message bodies, IDs, and turn states were verified in the current UI; retain legacy fallbacks.
@@ -17,6 +17,8 @@
   let busy = false;
   let job = null;
   let watchTimer = null;
+  let refreshWatch = null;
+  let watchObserver = null;
   const normalize = text => text.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
   // rich-text-user-turn splits paragraphs into elements, so textContent loses line breaks.
   // Keep editor matching strict; normalize whitespace only for submitted message DOM.
@@ -64,7 +66,14 @@
     || element.closest('[data-chatgpt-search-message-ids]')?.getAttribute('data-chatgpt-search-message-ids')
     || element.closest('[data-message-id]')?.getAttribute('data-message-id') || element;
   const userBodies = () => [...document.querySelectorAll(USER_MESSAGE)].filter(element => !element.querySelector(USER_MESSAGE));
-  const userText = element => (element.querySelector('.rich-text-user-turn') || element.querySelector('.whitespace-pre-wrap') || element).textContent;
+  function userText(element) {
+    const body = element.querySelector('.rich-text-user-turn') || element.querySelector('.whitespace-pre-wrap') || element;
+    // Show more/less labels are controls, not part of the submitted instructions.
+    if (typeof body.cloneNode !== 'function') return body.textContent;
+    const copy = body.cloneNode(true);
+    for (const button of copy.querySelectorAll('button')) button.remove();
+    return copy.textContent;
+  }
   const expandedPrompts = new WeakSet();
   function matchesUserPrompt(element, expected) {
     const shown=messageText(userText(element));
@@ -91,18 +100,22 @@
   function silentRoleSettled(userMessage) {
     const turn = userMessage.closest('[data-talvt-turn-state]');
     const editor = findEditor();
-    const idleAction = [...document.querySelectorAll("button[data-testid=\"voice-mode-button\"], button[aria-label=\"音声会話を開始\"], button[aria-label=\"Start voice mode\"], button[aria-label=\"Start Voice Mode\"], button[aria-label=\"Start voice chat\"], button[aria-label=\"Démarrer le mode vocal\"], button[aria-label=\"Sprachmodus starten\"], button[aria-label=\"Iniciar modo de voz\"], button[aria-label=\"Avvia modalità vocale\"], button[aria-label=\"Mulai mode suara\"], button[aria-label=\"Iniciar modo de voz\"], button[aria-label=\"वॉइस मोड शुरू करें\"]")]
+    const idleAction = [...document.querySelectorAll("button[data-testid=\"voice-mode-button\"], button[aria-label=\"Start Voice\"], button[aria-label=\"音声会話を開始\"], button[aria-label=\"Start voice mode\"], button[aria-label=\"Start Voice Mode\"], button[aria-label=\"Start voice chat\"], button[aria-label=\"Démarrer le mode vocal\"], button[aria-label=\"Sprachmodus starten\"], button[aria-label=\"Iniciar modo de voz\"], button[aria-label=\"Avvia modalità vocale\"], button[aria-label=\"Mulai mode suara\"], button[aria-label=\"Iniciar modo de voz\"], button[aria-label=\"वॉइस मोड शुरू करें\"]")]
       .some(button => visible(button) && !button.disabled && button.getAttribute('aria-disabled') !== 'true');
-    return turn?.getAttribute('data-talvt-turn-state') === 'complete' && !!editor
+    const state = turn?.getAttribute('data-talvt-turn-state');
+    const scope = turn || userMessage.closest('article') || userMessage.parentElement;
+    return (!state || state === 'complete') && !!editor
       && !editor.disabled && editor.getAttribute('aria-disabled') !== 'true'
       && !editor.closest('[aria-busy="true"]') && !normalize(read(editor))
-      && ![...turn.querySelectorAll('[role="alert"], [data-testid="conversation-turn-error"], [data-error="true"]')].some(visible)
+      && ![...(scope?.querySelectorAll('[role="alert"], [data-testid="conversation-turn-error"], [data-error="true"]') || [])].some(visible)
       && idleAction && !generating();
   }
 
   function endJob(phase, error) {
     clearInterval(watchTimer);
     watchTimer = null;
+    refreshWatch = null;
+    watchObserver?.disconnect(); watchObserver = null;
     job.phase = phase;
     if (error) job.error = error;
     busy = false;
@@ -115,6 +128,8 @@
     let silentReadySince = null;
     let userKey = messageKey(userMessage), missingSince = null;
     const expectedText = messageText(prompt), expectedIndex = previousUsers.length;
+    let imageReadySince = null;
+    let imageSignature = '';
     const pendingPath = value => /^\/c\/local-chatgpt(?::|%3a)[^/]+\/?$/i.test(value);
     const savedPath = value => /^\/c\/[^/]+\/?$/.test(value) && !pendingPath(value);
     function check() {
@@ -142,6 +157,32 @@
       if (users.some(element =>
         element !== userMessage && (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING))) {
         endJob('error', 'ChatGPT側で別の発言が追加されました。回答を混同しないため取得を中止しました。'); return;
+      }
+      // Only native image-generation components after this receipt can detach a turn.
+      // Plain text about images and earlier generated images must not trigger this path.
+      if (!silent && globalThis.RoundtableGeneratedImages) {
+        const markers = RoundtableGeneratedImages.after(userMessage);
+        if (markers.length) {
+          job.kind = 'image'; job.phase = 'generating_image';
+          const images = RoundtableGeneratedImages.loadedImages(markers);
+          const imageTurn = markers[0].closest('[data-talvt-turn-state]');
+          const turnState = imageTurn?.getAttribute('data-talvt-turn-state');
+          const failed = markers.some(node => [...node.querySelectorAll('[role="alert"], [data-error="true"]')].some(visible));
+          if (failed) { endJob('error', 'Image generation failed. Check the official chat.'); return; }
+          const signature = images.map(img => `${img.currentSrc || img.src}:${img.naturalWidth}:${img.naturalHeight}`).join('|');
+          if (signature !== imageSignature) { imageSignature = signature; imageReadySince = null; }
+          if (images.length && !generating() && (!turnState || turnState === 'complete') && savedPath(path)) {
+            imageReadySince ??= Date.now();
+            if (Date.now() - imageReadySince >= 2000) {
+              job.images = RoundtableGeneratedImages.capture(images);
+              endJob('complete'); return;
+            }
+          } else imageReadySince = null;
+        }
+        if (job.kind === 'image') {
+          if (Date.now() - started > 20 * 60 * 1000) endJob('error', 'Image generation timed out. Check the official chat.');
+          return;
+        }
       }
       const replies = assistantBodies().filter(element =>
         !previousReplies.has(messageKey(element)) &&
@@ -175,6 +216,12 @@
       try { check(); }
       catch { endJob('error', '回答のDOM読み取りに失敗しました。ChatGPT側を確認してください。'); }
     };
+    refreshWatch = tick;
+    // DOM changes detect generation promptly; STATUS also checks when background timers are throttled.
+    if (typeof MutationObserver !== 'undefined') {
+      watchObserver = new MutationObserver(tick);
+      watchObserver.observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['src','srcset','data-talvt-turn-state']});
+    }
     watchTimer = setInterval(tick, 300);
     tick();
   }
@@ -185,7 +232,7 @@
     // Keep role recovery compatible; add a one-time receipt only to normal messages.
     if(!silent)text='VSREQUEST'+crypto.randomUUID().replace(/-/g,'')+'END\nDelivery reference only; do not repeat it.\n\n'+text;
     busy = true;
-    job = { requestId, phase: 'sending', text: '', url: location.origin + location.pathname };
+    job = { requestId, phase: 'sending', text: '', url: location.origin + location.pathname, receipt: silent ? null : text.match(/^VSREQUEST[a-f0-9]{32}END/)?.[0] };
     let clicked = false;
     let watching = false;
     try {
@@ -255,11 +302,24 @@
     }
   }
 
-  function recoverRole(text) {
+  async function recoverRole(text) {
     if (typeof text !== 'string' || !text.startsWith('You are participating in a group discussion\n') || text.length > 20000) return { ok: false, error: 'Role復旧の指示が不正です。' };
     if (busy || generating()) return { ok: true, recovered: false };
     const users = userBodies();
-    const index = users.findLastIndex(user => messageText(userText(user)) === messageText(text));
+    const expected = messageText(text);
+    // Recover full text before comparison: saved roles can be collapsed by the official UI.
+    // A prefix alone is never enough to adopt a role (the meeting language may differ).
+    let index = -1;
+    for (let i = users.length - 1; i >= 0; i--) {
+      const user = users[i];
+      if (messageText(userText(user)) === expected) { index = i; break; }
+      const shown = messageText(userText(user)).replace(/(?:\.\.\.|…)$/, '');
+      if (shown.length < 80 || !expected.startsWith(shown)) continue;
+      const expand = user.querySelector('button[aria-expanded="false"]');
+      if (!expand || !visible(expand)) continue;
+      expand.click();
+      if (await waitFor(() => user.isConnected && messageText(userText(user)) === expected, 1500)) { index = i; break; }
+    }
     if (index < 0) return { ok: true, recovered: false };
     const user = users[index], next = users[index + 1];
     const reply = assistantBodies().filter(element =>
@@ -280,10 +340,25 @@
       sendResponse({ ok: true, version: VERSION, ready: !!findEditor(), busy: busy || generating(), url: location.origin + location.pathname });
       return;
     }
-    if (message?.type === 'ROUNDTABLE_CHATGPT_RECOVER_ROLE') { sendResponse(recoverRole(message.text)); return; }
+    if (message?.type === 'ROUNDTABLE_CHATGPT_RECOVER_ROLE') { recoverRole(message.text).then(sendResponse, error => sendResponse({ok:false,error:error.message})); return true; }
+    if (message?.type === 'ROUNDTABLE_CHATGPT_IMAGE_RESULT') {
+      if (job?.requestId !== message.requestId || job.kind !== 'image' || job.phase !== 'complete') {
+        sendResponse({ok:false,error:'The generated image is not ready.'}); return;
+      }
+      try {
+        const users = userBodies();
+        const user = users.findLast(element => messageText(userText(element)).startsWith(job.receipt));
+        if (!user || user !== users.at(-1)) throw Error('The image conversation has changed. Open the official chat.');
+        const images = job.images || RoundtableGeneratedImages.capture(RoundtableGeneratedImages.loadedImages(RoundtableGeneratedImages.after(user)));
+        sendResponse({ok:true,images,text:job.text,url:job.url});
+      } catch(error) { sendResponse({ok:false,error:error.message}); }
+      return;
+    }
     if (message?.type === 'ROUNDTABLE_CHATGPT_STATUS') {
+      if (job?.requestId === message.requestId) refreshWatch?.();
+      const {images: cachedImages, ...state} = job || {};
       sendResponse(job?.requestId === message.requestId
-        ? { ok: true, ...job }
+        ? { ok: true, ...state }
         : { ok: false, error: '回答の取得状態が見つかりません。ChatGPTを再読み込みした場合は取得が中断されます。' });
       return;
     }

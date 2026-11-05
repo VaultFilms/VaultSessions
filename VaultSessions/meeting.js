@@ -1,9 +1,9 @@
 "use strict";
 
 const uiText = text => globalThis.VaultI18n ? VaultI18n.message(text) : text;
-const VERSION = '0.13.1';
+const VERSION = '0.16.0';
 // Accept compatible service workers after UI-only updates.
-const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.10.3', '0.11.0', '0.11.1', '0.11.2', '0.11.3', '0.11.4', '0.11.5', '0.12.0', '0.12.1', '0.13.0', '0.13.1']);
+const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.16.0']);
 const meetingClientId = crypto.randomUUID();
 let meetingActive = true;
 let summaryBusy = false;
@@ -53,6 +53,8 @@ const connection = document.querySelector('#connection');
 const reloadExtension = document.querySelector('#reload-extension');
 const participants = document.querySelector('#participants');
 const targets = {};
+let imageJobs = null;
+const providerAvailable = id => !!targets[id] && !imageJobs?.isBusy(id);
 const cards = {};
 const connecting = new Set();
 let automaticInvitations = null;
@@ -68,7 +70,7 @@ const runRows = new Map();
 const controller = new RoundtableDiscussion.DiscussionController({
   languageNames: globalThis.VaultI18n?.locales.map(item=>item.meetingLanguage),
   order: Object.keys(providers), names: Object.fromEntries(Object.entries(providers).map(([id, value]) => [id, value.name])),
-  getTarget: id => targets[id], exchange,
+  getTarget: id => targets[id], isAvailable: id => !imageJobs?.isBusy(id), exchange,
   recoverRole: async (provider, text) => {
     const result = await request({ type: 'ROUNDTABLE_RECOVER_ROLE', provider, text, ...targets[provider] });
     return result.recovered === true;
@@ -103,7 +105,7 @@ function renderParticipants() {
   for (const id of Object.keys(providers)) {
     cards[id].invite.textContent = connecting.has(id) ? VaultI18n.t('message_008') : targets[id] ? VaultI18n.t('message_004') : VaultI18n.t('message_009', {0:providers[id].name});
     cards[id].leave.hidden = !targets[id] || connecting.has(id);
-    cards[id].badge.textContent = connecting.has(id) ? VaultI18n.t('message_003') : targets[id] ? VaultI18n.t('message_004') : VaultI18n.t('message_005');
+    cards[id].badge.textContent = imageJobs?.isBusy(id) ? VaultI18n.t('imageJobGenerating') : connecting.has(id) ? VaultI18n.t('message_003') : targets[id] ? VaultI18n.t('message_004') : VaultI18n.t('message_005');
   }
   syncControls();
 }
@@ -111,9 +113,9 @@ function syncControls() {
   const running = (controller.running || summaryBusy) || !meetingActive || meetingRestoring;
   reloadExtension.disabled = isConnecting() || (controller.running || summaryBusy) || meetingRestoring;
   // Reference capture does not block sending; omit unavailable material from this turn.
-  button.disabled = isConnecting() || running || imageLoading || !Object.keys(targets).length;
+  button.disabled = isConnecting() || running || imageLoading || !Object.keys(targets).some(providerAvailable);
   if (running && document.activeElement === input) input.blur();
-  input.disabled = isConnecting() || running || !Object.keys(targets).length;
+  input.disabled = isConnecting() || running || !Object.keys(targets).some(providerAvailable);
   imageInput.disabled = isConnecting() || running || imageLoading;
   imageRemove.disabled = isConnecting() || running || imageLoading;
   for (const remove of imagePreview.querySelectorAll('button')) remove.disabled = isConnecting() || running || imageLoading;
@@ -121,7 +123,7 @@ function syncControls() {
   stopButton.disabled = !controller.running;
   button.textContent = (controller.running || summaryBusy) ? VaultI18n.t('message_010') : !meetingActive ? VaultI18n.t('message_011') : VaultI18n.t('message_012');
   for (const [id, card] of Object.entries(cards)) {
-    card.invite.disabled = connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring || !!targets[id];
+    card.invite.disabled = connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring || !!targets[id] || !!imageJobs?.isBusy(id);
     card.leave.disabled = connecting.has(id) || pendingDepartures.has(id);
     for (const control of [card.select, card.reload, card.allow, card.roleRetry]) control.disabled = connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring;
   }
@@ -204,7 +206,7 @@ async function ensureMeetingAccess(){
 }
 async function invite(id, reload = false, overrideTabId = null) {
   const card = cards[id];
-  if (meetingRestoring || connecting.has(id) || (controller.running || summaryBusy) || targets[id]) return;
+  if (meetingRestoring || connecting.has(id) || (controller.running || summaryBusy) || targets[id] || imageJobs?.isBusy(id)) return;
   if (overrideTabId == null && !reload && !card.picker.hidden && !card.select.value) {
     providerStatus(id, 'error', VaultI18n.t('message_023'));
     return;
@@ -341,7 +343,7 @@ async function exchange(id, text, options = {}) {
 async function performExchange(id, text, { silent = false, images = [], requestId = crypto.randomUUID(), onProgress = () => {} } = {}) {
   await request({ type: 'ROUNDTABLE_HELLO' });
   // Side-panel pages have no own tab. Continue the meeting in the panel after switching to an AI tab.
-  const ownTab = providers[id].foreground && !isSidePanel ? await chrome.tabs.getCurrent() : null;
+  const ownTab = providers[id].foreground ? (isSidePanel ? (await chrome.tabs.query({active:true,currentWindow:true}))[0] : await chrome.tabs.getCurrent()) : null;
   const run = controller.active;
   const stage = text => {
     if (!silent && !run?.cancelled && controller.active === run) {
@@ -359,6 +361,11 @@ async function performExchange(id, text, { silent = false, images = [], requestI
     const state = await request({ type: 'ROUNDTABLE_STATUS', provider: id, requestId, tabId: result.tabId, returnTabId: ownTab?.id });
     if (state.url) { targets[id] = { tabId: result.tabId, conversationUrl: state.url }; renderConnection(); }
     if (state.phase === 'error') throw new Error(state.error || VaultI18n.t('message_039'));
+    if (!silent && run && state.kind === 'image') {
+      await request({type:'ROUNDTABLE_DETACH_IMAGE',provider:id,tabId:result.tabId,requestId,returnTabId:ownTab?.id});
+      const completed = state.phase === 'complete' ? await request({type:'ROUNDTABLE_IMAGE_RESULT',provider:id,tabId:result.tabId,requestId}) : null;
+      return {detachedImage:true,images:completed?.images,task:{provider:id,tabId:result.tabId,requestId,conversationUrl:state.url||targets[id].conversationUrl,startedAt:Date.now(),topic:run.text.slice(0,1000)}};
+    }
     if (state.phase === 'complete') { stage(VaultI18n.t('message_040')); return { text: state.text || '', url: state.url }; }
     stage(state.phase === 'streaming' ? VaultI18n.t('message_041') : VaultI18n.t('message_038'));
     if (!silent) onProgress(state.text || '');
@@ -439,6 +446,12 @@ function discussionEvent(event) {
       RoundtableLinks.render(row.body, event.text); row.meta.textContent = VaultI18n.t('message_057');
       break;
     }
+    case 'image-detached': {
+      const row = answerRow(record,event.provider);
+      clearNotice(record);record.answer=null;
+      window.dispatchEvent(new CustomEvent('roundtable-image-job',{detail:{task:event.task,row,images:event.images}}));
+      break;
+    }
     case 'reply': {
       const row = answerRow(record, event.provider);
       clearNotice(record);
@@ -509,7 +522,9 @@ form.addEventListener('submit', event => {
   if (!meetingActive || meetingRestoring || isConnecting() || imageLoading || (controller.running || summaryBusy)) return;
   try {
     const text = input.value.trim() || (selectedImages.length ? 'Review the attached images and share your observations.' : '');
-    const connected = Object.keys(providers).filter(id => targets[id] && !connecting.has(id));
+    const mentioned = RoundtableRecipients.mention(text);
+    if (mentioned && imageJobs?.isBusy(mentioned)) throw Error(VaultI18n.t('imageJobBusy',{name:providers[mentioned].name}));
+    const connected = Object.keys(providers).filter(id => providerAvailable(id) && !connecting.has(id));
     const first = RoundtableRecipients.choose(text, connected);
     controller.submit({ text, images: selectedImages, first,
       maxSpeeches: Number(document.querySelector('#max-speeches').value),
@@ -636,6 +651,7 @@ function clearInvitationIssue(id){
 }
 function leaveProvider(id) {
   const card=cards[id];delete targets[id];card.autoIssue=false;
+
   card.picker.hidden=true;card.recovery.hidden=true;card.allow.hidden=true;card.roleRetry.hidden=true;card.roleTarget=null;card.pendingTabId=null;
   renderParticipants();providerStatus(id,'ready',VaultI18n.t('message_088'));
   setStatus('ready',VaultI18n.t('message_089', {0:providers[id].name}));

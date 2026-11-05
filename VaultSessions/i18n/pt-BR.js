@@ -267,6 +267,15 @@ VaultI18n.register("pt-BR", {
     "notice_044": "Selecione uma conexão para {0}.",
     "notice_045": "Salve rascunhos antes de recarregar.",
     "notice_046": "Imagem {0}: {1}",
-    "advanced": "Avançado"
+    "advanced": "Avançado",
+    "imageJobGenerating": "Gerando imagem",
+    "imageJobWaiting": "A geração continua. Você pode conversar com as outras IAs.",
+    "imageJobComplete": "Imagem pronta",
+    "imageJobFailed": "A geração da imagem falhou ou excedeu o tempo limite.",
+    "imageJobBusy": "{name} está gerando uma imagem. Escolha outra IA.",
+    "imageJobOpen": "Abrir chat oficial",
+    "imageJobDownload": "Salvar prévia",
+    "imageJobPreview": "O VS exibe uma prévia compactada. Abra o chat oficial para ver a imagem original.",
+    "imageJobAlt": "Imagem gerada {number}"
   }
 });

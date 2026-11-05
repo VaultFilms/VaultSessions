@@ -1,6 +1,7 @@
 "use strict";
 importScripts('page-context.js');
 importScripts('image-utils.js');
+importScripts('generated-images.js');
 importScripts('meeting-state.js');
 const meetingSessions = new RoundtableSession.Store(chrome.storage.session);
 const LOCALHOST_URL='http://127.0.0.1:8766/meeting.html';
@@ -13,13 +14,13 @@ const webSender = sender => sender.id === chrome.runtime.id && isMeetingURL(send
 
 if (chrome.runtime.onConnect) new RoundtablePages.Coordinator(chrome);
 
-const VERSION = '0.13.1';
+const VERSION = '0.16.0';
 const BRIDGE_VERSION = '0.5.1';
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const PROVIDERS = {
-  chatgpt: { foreground: true, bridgeVersion: '0.8.7', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
-  gemini: { foreground: true, bridgeVersion: '0.8.4', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
-  claude: { foreground: true, bridgeVersion: '0.9.7', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' }
+  chatgpt: { foreground: true, bridgeVersion: '0.9.1', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
+  gemini: { foreground: true, bridgeVersion: '0.9.0', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
+  claude: { foreground: true, bridgeVersion: '0.10.0', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' }
 };
 const cleanURL = url => url?.split(/[?#]/)[0];
 const sending = new Set();
@@ -199,7 +200,8 @@ async function returnToMeeting(provider, sourceTabId, meetingTabId) {
     const source = await chrome.tabs.get(sourceTabId);
     const meeting = await chrome.tabs.get(meetingTabId);
     if (!source.active || !source.url?.startsWith(provider.pattern.replace('*', ''))) return;
-    if (!isMeetingURL(meeting.url) && cleanURL(meeting.url) !== chrome.runtime.getURL('meeting.html')) return;
+    const savedSidebarTabs = (await chrome.storage.session.get('roundtableSidebarTabs')).roundtableSidebarTabs || [];
+    if (!isMeetingURL(meeting.url) && cleanURL(meeting.url) !== chrome.runtime.getURL('meeting.html') && !sidebarTabs.has(meetingTabId) && !savedSidebarTabs.includes(meetingTabId)) return;
     // Do not steal focus if the user has moved to another tab or window.
     if (Number.isInteger(source.windowId) && !(await chrome.windows.get(source.windowId)).focused) return;
     await chrome.tabs.update(meetingTabId, { active: true });
@@ -221,6 +223,14 @@ function roleState(providerId, provider, message, verifiedRecovery = false) {
     const tab = await chrome.tabs.get(message.tabId);
     if (!tab.url?.startsWith(provider.pattern.replace('*', ''))) throw new Error('Roleの対象タブが見つかりません。');
     const data = (await chrome.storage.session.get('roundtableRoles')).roundtableRoles || { ready: {}, pending: {} };
+    // Persist only verified completed role revisions, never messages or pending operations.
+    // This avoids re-sending roles after a browser restart or extension reload.
+    const saved = (await chrome.storage.local.get('roundtableRoleReady')).roundtableRoleReady;
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+      for (const [key, revision] of Object.entries(saved)) {
+        if (/^(chatgpt|gemini|claude):https:\/\//.test(key) && [1, 2].includes(revision)) data.ready[key] ??= revision;
+      }
+    }
     const tabKey = `${providerId}:${message.tabId}`;
     const urlKey = `${providerId}:${cleanURL(message.conversationUrl)}`;
     if (message.operation === 'adopt') {
@@ -251,6 +261,10 @@ function roleState(providerId, provider, message, verifiedRecovery = false) {
       }
     }
     await chrome.storage.session.set({ roundtableRoles: data });
+    if (['complete', 'adopt'].includes(message.operation)) {
+      const entries = Object.entries(data.ready).slice(-500);
+      await chrome.storage.local.set({roundtableRoleReady: Object.fromEntries(entries)});
+    }
     return { ok: true, state: message.operation === 'begin' ? 'claimed' : ['complete', 'adopt'].includes(message.operation) ? 'ready' : message.operation };
   });
   roleWrites = operation.catch(() => {});
@@ -311,7 +325,7 @@ function handleMeetingMessage(message, sender, respond) {
   }
   if (message?.type === 'ROUNDTABLE_HELLO') { respond({ ok: true, version: VERSION }); return; }
   if(message?.type==='ROUNDTABLE_DISCOVER'){discoverProviders().then(providers=>respond({ok:true,providers}),error=>respond({ok:false,error:error.message}));return true;}
-  if (!['ROUNDTABLE_CONNECT', 'ROUNDTABLE_RELOAD_CONNECT', 'ROUNDTABLE_SEND', 'ROUNDTABLE_STATUS', 'ROUNDTABLE_ROLE_STATE', 'ROUNDTABLE_RECOVER_ROLE'].includes(message?.type)) return;
+  if (!['ROUNDTABLE_CONNECT', 'ROUNDTABLE_RELOAD_CONNECT', 'ROUNDTABLE_SEND', 'ROUNDTABLE_STATUS', 'ROUNDTABLE_ROLE_STATE', 'ROUNDTABLE_RECOVER_ROLE', 'ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_IMAGE_RESULT', 'ROUNDTABLE_IMAGE_IDLE'].includes(message?.type)) return;
   (async () => {
     const providerId = message.provider;
     const provider = Object.hasOwn(PROVIDERS, providerId) && PROVIDERS[providerId];
@@ -333,15 +347,51 @@ function handleMeetingMessage(message, sender, respond) {
       return { ok: true, provider: providerId, tabId: tab.id, url: hello.url || cleanURL(tab.url) };
     }
     if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId)) throw new Error('送信IDが不正です。会議ページを再読み込みしてください。');
+    if (message.type === 'ROUNDTABLE_IMAGE_IDLE') {
+      await meetingSessions.verify(message.clientId);
+      if (!['chatgpt','gemini','claude'].includes(providerId) || !Number.isInteger(message.tabId)) throw Error('Invalid image-generation target.');
+      let tab;try{tab=await chrome.tabs.get(message.tabId);}catch{return {ok:true,idle:true,disconnected:true};}
+      if (cleanURL(tab.url)!==message.conversationUrl) return {ok:true,idle:true,disconnected:true};
+      const state=await deliver(provider,tab.id,{type:provider.prefix+'_HELLO'});
+      return {ok:true,idle:state.ok===true&&state.busy===false,disconnected:state.ready===false};
+    }
+    if (['ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_IMAGE_RESULT'].includes(message.type)) {
+      await meetingSessions.verify(message.clientId);
+      if (!['chatgpt','gemini','claude'].includes(providerId) || !Number.isInteger(message.tabId)) throw Error('Invalid image-generation target.');
+      const tab = await chrome.tabs.get(message.tabId);
+      if (!tab.url?.startsWith(providerId === 'chatgpt' ? 'https://chatgpt.com/' : providerId === 'gemini' ? 'https://gemini.google.com/' : 'https://claude.ai/')) throw Error('The image-generation tab has closed or changed.');
+      const state = await deliver(provider, tab.id, {type:provider.prefix+'_STATUS',requestId:message.requestId});
+      if (!state.ok || state.kind !== 'image' || !['generating_image','complete'].includes(state.phase)) throw Error('No matching image-generation task was found.');
+      if (message.type === 'ROUNDTABLE_IMAGE_RESULT') {
+        const result = await deliver(provider, tab.id, {type:provider.prefix+'_IMAGE_RESULT',requestId:message.requestId});
+        if(providerId!=='claude'||!result.ok||!result.needsFrame)return result;
+        // Only the SVG preview opened by the matching current-turn file card may be captured.
+        await chrome.scripting.executeScript({target:{tabId:tab.id,allFrames:true},files:['generated-images.js','claude-svg.js']});
+        const frames=await chrome.scripting.executeScript({target:{tabId:tab.id,allFrames:true},func:async()=>{
+          if(location.origin!=='https://www.claudeusercontent.com')return null;
+          return RoundtableClaudeSVG.captureFrame();
+        }});
+        const candidates=frames.filter(frame=>frame.result?.length);
+        if(candidates.length!==1)return {ok:true,pending:true};
+        // Revalidate the current turn after asynchronous preview access.
+        const verified=await deliver(provider,tab.id,{type:provider.prefix+'_IMAGE_RESULT',requestId:message.requestId});
+        if(!verified.ok||!verified.needsFrame)return verified;
+        return {ok:true,images:RoundtableGeneratedImages.clean(candidates[0].result),text:result.text,url:result.url};
+      }
+      await releaseInput(tab.id, message.requestId);
+      await returnToMeeting(provider, tab.id, message.returnTabId);
+      return {ok:true};
+    }
     if (message.type === 'ROUNDTABLE_STATUS') {
       if (!Number.isInteger(message.tabId)) throw new Error('送信先タブが不明です。');
       let result;
       try { result = await deliver(provider, message.tabId, { type: `${provider.prefix}_STATUS`, requestId: message.requestId }); }
       catch (error) { await releaseInput(message.tabId, message.requestId); throw error; }
-      if (provider.foreground && result.ok && ['sending', 'waiting', 'streaming'].includes(result.phase)) {
+      const detached = message.backgroundImage === true && result.kind === 'image';
+      if (!detached && provider.foreground && result.ok && ['sending', 'waiting', 'streaming', 'generating_image'].includes(result.phase)) {
         await inputGuard(message.tabId, message.requestId, true, undefined, true);
       }
-      if (provider.foreground && (!result.ok || ['complete', 'error'].includes(result.phase))) {
+      if (!detached && provider.foreground && (!result.ok || ['complete', 'error'].includes(result.phase))) {
         await returnToMeeting(provider, message.tabId, message.returnTabId);
         await releaseInput(message.tabId, message.requestId);
       }

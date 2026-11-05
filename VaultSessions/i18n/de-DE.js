@@ -267,6 +267,15 @@ VaultI18n.register("de-DE", {
     "notice_044": "Wählen Sie eine Verbindung für {0}.",
     "notice_045": "Sichern Sie ungesendete Entwürfe vor dem Neuladen.",
     "notice_046": "Bild {0}: {1}",
-    "advanced": "Erweitert"
+    "advanced": "Erweitert",
+    "imageJobGenerating": "Bild wird erstellt",
+    "imageJobWaiting": "Die Bilderstellung läuft weiter. Sie können mit den anderen KI-Teilnehmern sprechen.",
+    "imageJobComplete": "Bild fertig",
+    "imageJobFailed": "Die Bilderstellung ist fehlgeschlagen oder hat das Zeitlimit überschritten.",
+    "imageJobBusy": "{name} erstellt ein Bild. Wählen Sie eine andere KI.",
+    "imageJobOpen": "Offiziellen Chat öffnen",
+    "imageJobDownload": "Vorschau speichern",
+    "imageJobPreview": "VS zeigt eine komprimierte Vorschau. Das Original finden Sie im offiziellen Chat.",
+    "imageJobAlt": "Erstelltes Bild {number}"
   }
 });
