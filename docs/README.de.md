@@ -29,9 +29,10 @@
 - **Natürliche Gruppendiskussionen.** Verbundene KIs sprechen abwechselnd, bringen neue Perspektiven ein und setzen aus, wenn sie nichts hinzuzufügen haben. Bei nur einer verbundenen KI gibt es eine einzelne Antwort.
 - **Den ersten Antwortenden natürlich bestimmen.** Nutzen Sie `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude` oder `To Gemini`. Ohne Angabe wird die erste KI zufällig gewählt.
 - **Visuellen Kontext teilen.** Hängen Sie bis zu vier Bilder an oder fügen Sie sie ein und besprechen Sie sie anhand ihrer Nummern.
+- **Während der Bilderstellung mit anderen KIs sprechen.** Sobald die native Bilderstellung erkannt wird, ist die erzeugende KI (ChatGPT oder Gemini) vorübergehend nicht verfügbar. Mit den anderen verbundenen KIs können Sie weiterreden. Fertige Vorschauen erscheinen bei der ursprünglichen Anfrage und starten keine neue Diskussionsrunde. VS zeigt komprimierte Vorschauen; Originale finden Sie im offiziellen Chat. Fehler bei Erstellung oder Abruf sowie Zeitüberschreitungen erscheinen im Protokoll. Die KI kehrt automatisch zurück, sobald ihr Chat bereit ist. Lassen Sie den offiziellen Tab geöffnet; der Fortschritt im Hintergrund hängt vom Anbieter und Browser ab. Auch SVG-Code und SVG-Dateien von Claude werden unterstützt: VS entfernt Skripte und externe Verweise und erstellt eine Rastervorschau.
 - **Die aktuelle Seite teilen.** Stellen Sie bei Bedarf lesbaren Seitentext als Besprechungsreferenz bereit.
 - **Zusammenfassen und kopieren.** Erstellen Sie eine Zusammenfassung zum Nachlesen oder für eine spätere Besprechung.
-- **Seitenleiste und erweiterte Ansicht.** Wechseln Sie das Layout, blenden Sie Teilnehmersteuerungen aus und passen Sie die Protokollschriftgröße an.
+- **Seitenbereich und erweiterte Ansicht.** Wechseln Sie das Layout, blenden Sie Teilnehmersteuerungen aus und passen Sie die Protokollschriftgröße an.
 - **Neun Oberflächensprachen.** Englisch, Japanisch, Französisch (Frankreich), Deutsch (Deutschland), Spanisch (USA), Italienisch, Indonesisch, Portugiesisch (Brasilien) und Hindi. Die erste Auswahl folgt den Browsereinstellungen, mit Englisch als Fallback. Manuelle Einstellungen werden gespeichert. Der Dunkelmodus folgt dem Browser bzw. Betriebssystem.
 
 VaultSessions ist ein Machbarkeitsnachweis für eine Besprechungsoberfläche, die unterschiedliche KI-Kontexte, Persönlichkeiten und menschliche Perspektiven zusammenbringt. Das Projekt ist weder mit OpenAI, Google oder Anthropic verbunden noch von diesen Unternehmen empfohlen.
@@ -59,26 +60,26 @@ VaultSessions/
 2. Öffnen Sie `chrome://extensions/` und aktivieren Sie den **Entwicklermodus**.
 3. Klicken Sie auf **Entpackte Erweiterung laden** und wählen Sie den inneren Ordner **`VaultSessions/`** mit `manifest.json`, nicht das Stammverzeichnis des Repositorys.
 4. Öffnen Sie die offiziellen Websites von ChatGPT, Gemini und/oder Claude und melden Sie sich selbst an.
-5. Klicken Sie in dem Tab, in dem die Besprechungsseitenleiste erscheinen soll, auf das VaultSessions-Erweiterungssymbol.
+5. Klicken Sie in dem Tab, in dem die Besprechungs-Seitenbereich erscheinen soll, auf das VaultSessions-Erweiterungssymbol.
 
 Verwenden Sie eine aktuelle Chrome-Version. Das Manifest verlangt mindestens Chrome 116; die Kompatibilität mit Browser-APIs und Anbieteroberflächen kann jedoch variieren. Für normale Besprechungen sind weder ein Build-Schritt noch ein Server nötig.
 
 Laden Sie nach einem Update die Erweiterung, die offiziellen KI-Tabs und die Besprechungsansicht neu.
 
-**Windows-Unterstützung:** Eine Windows-Anleitung und ein Startskript sind enthalten, VaultSessions wurde jedoch noch nicht auf einem Windows-Rechner getestet. Fensterfokus, IME-Eingabe, das Einfügen von Bildern aus der Zwischenablage und der Wechsel zwischen Seitenleiste und Vollbild müssen unter Windows noch geprüft werden.
+**Windows-Unterstützung:** Eine Windows-Anleitung und ein Startskript sind enthalten, VaultSessions wurde jedoch noch nicht auf einem Windows-Rechner getestet. Fensterfokus, IME-Eingabe, das Einfügen von Bildern aus der Zwischenablage und der Wechsel zwischen Seitenbereich und Vollbild müssen unter Windows noch geprüft werden.
 
 ### Erweiterte Ansicht ohne Server
 
 1. Aktivieren Sie in den **Details** der Erweiterung **Zugriff auf Datei-URLs zulassen**.
 2. Öffnen Sie `VaultSessions/meeting.html` in Chrome.
 3. Klicken Sie auf **Diese Besprechungsseite registrieren**, um ihre genaue lokale URL im lokalen Erweiterungsspeicher zu hinterlegen.
-4. Wechseln Sie über die Kopfzeilensteuerung zwischen Seitenleiste und erweiterter Ansicht.
+4. Wechseln Sie über die Kopfzeilensteuerung zwischen Seitenbereich und erweiterter Ansicht.
 
-Nach dem Verschieben des Ordners müssen Sie die neue `meeting.html` öffnen und erneut registrieren. Beim Wechsel von der Seitenleiste wird der aktuelle Tab wiederverwendet; über Zurück gelangen Sie zur vorherigen Website. Das Protokoll wird übernommen, KI-Verbindungen müssen aber gegebenenfalls erneut hergestellt werden.
+Nach dem Verschieben des Ordners müssen Sie die neue `meeting.html` öffnen und erneut registrieren. Beim Wechsel von dem Seitenbereich wird der aktuelle Tab wiederverwendet; über Zurück gelangen Sie zur vorherigen Website. Das Protokoll wird übernommen, KI-Verbindungen müssen aber gegebenenfalls erneut hergestellt werden.
 
 ### Optionaler localhost-Modus
 
-Manche KI-Browserseitenleisten können `file://`-Seiten nicht bedienen. Installieren Sie für solche Integrationen Python 3 und starten Sie den optionalen Loopback-Server:
+Manche KI-Browser-Seitenbereiche können `file://`-Seiten nicht bedienen. Installieren Sie für solche Integrationen Python 3 und starten Sie den optionalen Loopback-Server:
 
 | Plattform | Startdatei | Terminalbefehl im inneren Ordner `VaultSessions/` |
 | --- | --- | --- |

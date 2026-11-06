@@ -13,7 +13,7 @@ if (((location.protocol === 'file:' && location.pathname.endsWith('/meeting.html
     const button=event.target?.closest?.('#switch-view');
     if(!event.isTrusted||!button||button.disabled)return;
     event.preventDefault();event.stopImmediatePropagation();
-    const label=button.textContent;button.disabled=true;button.textContent='サイドバーを開いています…';
+    const label=button.textContent;button.disabled=true;button.textContent=button.dataset?.openingLabel||'Opening side panel…';
     let opening;
     try{opening=chrome.runtime.sendMessage({type:'ROUNDTABLE_OPEN_SIDEBAR'});}catch(error){opening=Promise.reject(error);}
     Promise.resolve(opening).then(result=>{

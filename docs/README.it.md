@@ -29,6 +29,7 @@
 - **Discussioni di gruppo naturali.** Le IA connesse intervengono a turno, offrono nuovi punti di vista e passano se non hanno nulla da aggiungere. Con una sola IA connessa viene fornita una sola risposta.
 - **Scegli naturalmente chi risponde per primo.** Usa `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude` o `To Gemini`. In assenza di indicazioni, la prima IA viene scelta casualmente.
 - **Condividi il contesto visivo.** Allega o incolla fino a quattro immagini e discutine usando i loro numeri.
+- **Continua a parlare mentre ChatGPT o Gemini genera immagini.** Quando viene rilevata la generazione nativa, l’IA che genera diventa temporaneamente non disponibile e puoi parlare con le altre IA connesse. Le anteprime completate appaiono accanto alla richiesta originale, senza avviare un altro giro di discussione. VS mostra anteprime compresse; gli originali sono nella chat ufficiale. Errori di generazione o recupero e timeout appaiono nel registro; l’IA torna automaticamente quando la sua chat è pronta. Tieni aperta la scheda ufficiale; l’avanzamento in background dipende dal fornitore e dal browser. Sono supportati anche codice e file SVG di Claude: VS rimuove script e riferimenti esterni e li converte in anteprime raster.
 - **Condividi la pagina attuale.** Se lo desideri, fornisci il testo leggibile di una pagina come materiale di riferimento.
 - **Riassumi e copia.** Genera un riepilogo da rileggere o utilizzare in una riunione futura.
 - **Pannello laterale e vista estesa.** Cambia disposizione, nascondi i controlli dei partecipanti e regola il testo del registro.
@@ -65,7 +66,7 @@ Usa una versione recente di Chrome. Il minimo dichiarato nel manifest è Chrome 
 
 Dopo un aggiornamento, ricarica l’estensione, le schede ufficiali delle IA e la vista della riunione.
 
-**Supporto Windows:** Sono inclusi istruzioni e uno script di avvio per Windows, ma VaultSessions non è ancora stato testato su un computer Windows. Il focus delle finestre, l’input IME, l’inserimento di immagini dagli appunti e il passaggio tra barra laterale e schermo intero devono ancora essere verificati su Windows.
+**Supporto Windows:** Sono inclusi istruzioni e uno script di avvio per Windows, ma VaultSessions non è ancora stato testato su un computer Windows. Il focus delle finestre, l’input IME, l’inserimento di immagini dagli appunti e il passaggio tra pannello laterale e schermo intero devono ancora essere verificati su Windows.
 
 ### Vista estesa senza server
 

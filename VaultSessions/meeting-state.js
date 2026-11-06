@@ -1,5 +1,6 @@
 'use strict';
 (function(root){
+  const documents=root.VaultDocumentRecords||(typeof require==='function'?require('./document-records.js'):null);
   const KEY='roundtableMeetingSessionV1';
   function imageState(row){
     if(row.type!=='image-generation')return {};
@@ -16,9 +17,9 @@
   function clean(snapshot){
     if(!snapshot||snapshot.version!==1||!Array.isArray(snapshot.rows)||!Array.isArray(snapshot.history))throw Error('会議ログの形式が不正です。');
     if(JSON.stringify(snapshot).length>3000000)throw Error('一時ログの容量上限を超えました。');
-    const rows=snapshot.rows.slice(-500).filter(row=>['user','assistant','system'].includes(row.role)&&typeof row.text==='string'&&row.text.length<=50000&&typeof row.meta==='string'&&(row.role!=='assistant'||['chatgpt','gemini','claude'].includes(row.provider))).map(row=>{const {role,text,meta,provider,timestamp,type}=row;return {role,text,meta,provider,...imageState(row),...(['summary','image-generation'].includes(type)?{type}:{}),...(Number.isFinite(timestamp)&&timestamp>0?{timestamp}:{})};});
-    const history=snapshot.history.slice(-500).filter(item=>item.type!=='summary'&&typeof item.text==='string'&&item.text.length<=50000&&['Human','ChatGPT','Gemini','Claude'].includes(item.speaker)).map((item,index)=>({seq:index+1,text:item.text,speaker:item.speaker,runId:Number.isInteger(item.runId)?item.runId:0}));
-    return {version:1,rows,history,serial:Number.isInteger(snapshot.serial)?snapshot.serial:0,settings:snapshot.settings&&typeof snapshot.settings==='object'?snapshot.settings:{},draft:typeof snapshot.draft==='string'?snapshot.draft.slice(0,20000):''};
+    const rows=snapshot.rows.slice(-500).filter(row=>['user','assistant','system'].includes(row.role)&&typeof row.text==='string'&&row.text.length<=50000&&typeof row.meta==='string'&&(row.role!=='assistant'||['chatgpt','gemini','claude'].includes(row.provider))).map(row=>{const {role,text,meta,provider,timestamp,type}=row;return {role,text,meta,provider,...(typeof row.recordId==='string'?{recordId:row.recordId.slice(0,80)}:{}),...imageState(row),...(['summary','handoff','image-generation','inspection'].includes(type)?{type}:{}),...(Number.isFinite(timestamp)&&timestamp>0?{timestamp}:{})};});
+    const history=snapshot.history.slice(-500).filter(item=>!['summary','handoff','inspection'].includes(item.type)&&typeof item.text==='string'&&item.text.length<=50000&&['Human','ChatGPT','Gemini','Claude'].includes(item.speaker)).map((item,index)=>({seq:index+1,text:item.text,speaker:item.speaker,runId:Number.isInteger(item.runId)?item.runId:0}));
+    return {version:1,rows,history,...(snapshot.documents?{documents:documents.clean(snapshot.documents)}:{}),serial:Number.isInteger(snapshot.serial)?snapshot.serial:0,settings:snapshot.settings&&typeof snapshot.settings==='object'?snapshot.settings:{},draft:typeof snapshot.draft==='string'?snapshot.draft.slice(0,20000):''};
   }
   class Store{
     constructor(storage){this.storage=storage;this.tail=Promise.resolve();}

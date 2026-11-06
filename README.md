@@ -29,9 +29,10 @@
 - **Natural group discussions.** Connected AIs take turns, contribute new perspectives, and pass when they have nothing to add. One connected AI gives a single reply.
 - **Choose a first speaker naturally.** Use `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, or `To Gemini`. Otherwise, the first speaker is selected randomly.
 - **Share visual context.** Attach or paste up to four images and discuss them by number.
+- **Keep talking while ChatGPT or Gemini generates images.** When native image generation is detected, the generating AI becomes temporarily unavailable and you can talk to the other connected AIs. Completed previews appear beside the original request, without starting another discussion round. VS provides compressed previews; use the official chat for originals. Generation or retrieval failures and timeouts are shown in the log; the AI returns automatically once its official chat is ready. Keep the official tab open; background progress depends on the provider and browser. Claude SVG code and SVG file previews are also supported; VS sanitizes and converts them into raster previews, without running SVG scripts or loading external resources.
 - **Share the current page.** Optionally provide readable page text as meeting reference material.
 - **Summarize and copy.** Generate a summary for your own review or a future meeting.
-- **Sidebar and fullscreen views.** Switch layouts, hide participant controls, and adjust log text size.
+- **Side panel and fullscreen views.** Switch layouts, hide participant controls, and adjust log text size.
 - **Nine interface languages.** English, Japanese, French (France), German (Germany), Spanish (United States), Italian, Indonesian, Portuguese (Brazil), and Hindi. Initial selection follows browser preferences, with English as the fallback; manual choices are remembered. Dark mode follows the browser/system preference.
 
 VaultSessions is a proof of concept for a meeting interface that brings different AI contexts, personalities, and human perspectives into one discussion. It is not affiliated with or endorsed by OpenAI, Google, or Anthropic.
@@ -59,26 +60,26 @@ VaultSessions/
 2. Open `chrome://extensions/` and enable **Developer mode**.
 3. Click **Load unpacked** and select **`VaultSessions/`**, the folder containing `manifest.json` (not the repository root).
 4. Open the official ChatGPT, Gemini, and/or Claude websites and sign in yourself.
-5. Click the VaultSessions extension icon on the tab where you want the meeting sidebar.
+5. Click the VaultSessions extension icon on the tab where you want the meeting side panel.
 
 Use a current Chrome release. The manifest minimum is Chrome 116, but browser API and provider UI compatibility can vary. No build step or server is needed for normal meetings.
 
 After updating, reload the extension, the official AI tabs, and the meeting view.
 
-**Windows support:** Windows setup instructions and a launcher are included, but VaultSessions has not yet been tested on a Windows machine. Window focus, IME input, clipboard image pasting, and sidebar/fullscreen switching still need Windows verification.
+**Windows support:** Windows setup instructions and a launcher are included, but VaultSessions has not yet been tested on a Windows machine. Window focus, IME input, clipboard image pasting, and side panel/fullscreen switching still need Windows verification.
 
 ### Fullscreen without a server
 
 1. In the extension's **Details**, enable **Allow access to file URLs**.
 2. Open `VaultSessions/meeting.html` in Chrome.
 3. Click **Register this meeting page** to save its exact local URL in extension-local storage.
-4. Use the header controls to switch between sidebar and fullscreen.
+4. Use the header controls to switch between side panel and fullscreen.
 
-Moving the folder requires opening and registering the new `meeting.html`. Switching from the sidebar reuses the current tab; browser Back returns to the previous website. Logs are handed off, but AI connections may need to reconnect.
+Moving the folder requires opening and registering the new `meeting.html`. Switching from the side panel reuses the current tab; browser Back returns to the previous website. Logs are handed off, but AI connections may need to reconnect.
 
 ### Optional localhost mode
 
-Some AI browser sidebars cannot interact with `file://` pages. For those integrations, install Python 3 and start the optional loopback server:
+Some AI browser side panels cannot interact with `file://` pages. For those integrations, install Python 3 and start the optional loopback server:
 
 | Platform | Launcher                                   | Terminal alternative, from the `VaultSessions/` folder |
 | -------- | ------------------------------------------ | ------------------------------------------------------ |

@@ -29,6 +29,7 @@
 - **Des discussions de groupe naturelles.** Les IA connectées interviennent à tour de rôle, apportent de nouveaux points de vue et passent leur tour lorsqu’elles n’ont rien à ajouter. Une seule IA connectée donne une seule réponse.
 - **Désignez naturellement le premier intervenant.** Utilisez `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude` ou `To Gemini`. Sans indication, le premier intervenant est choisi au hasard.
 - **Partagez un contexte visuel.** Joignez ou collez jusqu’à quatre images et discutez-en en utilisant leurs numéros.
+- **Continuez à discuter pendant que ChatGPT ou Gemini génère des images.** Lorsque la génération native est détectée, l’IA qui génère devient temporairement indisponible et vous pouvez parler aux autres IA connectées. Les aperçus terminés apparaissent avec la demande initiale, sans relancer la discussion. VS fournit des aperçus compressés ; consultez le chat officiel pour les originaux. Les échecs de génération ou de récupération et les délais dépassés apparaissent dans le journal ; l’IA revient automatiquement lorsque son chat est prêt. Gardez l’onglet officiel ouvert ; la progression en arrière-plan dépend du fournisseur et du navigateur. Les codes et fichiers SVG de Claude sont également pris en charge : VS supprime les scripts et références externes, puis crée un aperçu matriciel.
 - **Partagez la page actuelle.** Fournissez, si vous le souhaitez, le texte lisible d’une page comme document de référence.
 - **Résumez et copiez.** Générez un résumé pour relire la discussion ou préparer une prochaine réunion.
 - **Panneau latéral et vue agrandie.** Changez de présentation, masquez les commandes des participants et ajustez la taille du texte du journal.
@@ -65,7 +66,7 @@ Utilisez une version récente de Chrome. Le minimum déclaré dans le manifeste 
 
 Après une mise à jour, rechargez l’extension, les onglets officiels des IA et la vue de réunion.
 
-**Prise en charge de Windows :** Des instructions et un lanceur pour Windows sont fournis, mais VaultSessions n’a pas encore été testé sur une machine Windows. Le focus des fenêtres, la saisie IME, le collage d’images depuis le presse-papiers et le passage entre la barre latérale et le plein écran restent à vérifier sous Windows.
+**Prise en charge de Windows :** Des instructions et un lanceur pour Windows sont fournis, mais VaultSessions n’a pas encore été testé sur une machine Windows. Le focus des fenêtres, la saisie IME, le collage d’images depuis le presse-papiers et le passage entre la panneau latéral et le plein écran restent à vérifier sous Windows.
 
 ### Vue agrandie sans serveur
 

@@ -29,6 +29,7 @@
 - **Discussões em grupo naturais.** As IAs conectadas participam em turnos, trazem novas perspectivas e passam a vez quando não têm nada a acrescentar. Com apenas uma IA conectada, há uma única resposta.
 - **Escolha naturalmente quem responde primeiro.** Use `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude` ou `To Gemini`. Sem indicação, a primeira IA é escolhida aleatoriamente.
 - **Compartilhe contexto visual.** Anexe ou cole até quatro imagens e discuta sobre elas pelos números.
+- **Continue conversando enquanto o ChatGPT ou o Gemini gera imagens.** Ao detectar a geração nativa, a IA que está gerando fica temporariamente indisponível e você pode conversar com as outras IAs conectadas. As prévias concluídas aparecem junto ao pedido original, sem iniciar outra rodada de discussão. O VS mostra prévias compactadas; os originais ficam no chat oficial. Falhas de geração ou recuperação e tempos limite aparecem no registro; a IA retorna automaticamente quando o chat oficial está pronto. Mantenha a aba oficial aberta; o progresso em segundo plano depende do provedor e do navegador. Código e arquivos SVG do Claude também são compatíveis: o VS remove scripts e referências externas e os converte em prévias rasterizadas.
 - **Compartilhe a página atual.** Se desejar, forneça o texto legível de uma página como material de referência.
 - **Resuma e copie.** Gere um resumo para revisar depois ou usar em uma próxima reunião.
 - **Painel lateral e visualização expandida.** Alterne o layout, oculte controles dos participantes e ajuste o tamanho do texto do registro.
@@ -65,7 +66,7 @@ Use uma versão atual do Chrome. O mínimo declarado no manifesto é Chrome 116,
 
 Após atualizar os arquivos, recarregue a extensão, as abas oficiais das IAs e a visualização da reunião.
 
-**Suporte ao Windows:** Estão incluídos instruções de instalação e um script de inicialização para Windows, mas o VaultSessions ainda não foi testado em um computador Windows. O foco das janelas, a entrada com IME, a colagem de imagens da área de transferência e a alternância entre a barra lateral e a tela cheia ainda precisam ser verificados no Windows.
+**Suporte ao Windows:** Estão incluídos instruções de instalação e um script de inicialização para Windows, mas o VaultSessions ainda não foi testado em um computador Windows. O foco das janelas, a entrada com IME, a colagem de imagens da área de transferência e a alternância entre a painel lateral e a tela cheia ainda precisam ser verificados no Windows.
 
 ### Visualização expandida sem servidor
 

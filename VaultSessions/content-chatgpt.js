@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.1';
+  const VERSION = '0.9.2';
   // ProseMirror and the Japanese send label were verified in normal Chat UI on 2026-10-29.
   // English labels, #prompt-textarea, and data-testid are compatibility candidates not verified in that session.
   // Message bodies, IDs, and turn states were verified in the current UI; retain legacy fallbacks.
@@ -226,11 +226,11 @@
     tick();
   }
 
-  async function send(text, requestId, silent, images = []) {
+  async function send(text, requestId, silent, images = [], contextOnly = false) {
     if (busy) throw new Error("このChatGPTタブで送信処理中です。");
     if (typeof text !== "string" || !text.trim() || text.length > 20000) throw new Error("入力が空か、20,000文字を超えています。");
     // Keep role recovery compatible; add a one-time receipt only to normal messages.
-    if(!silent)text='VSREQUEST'+crypto.randomUUID().replace(/-/g,'')+'END\nDelivery reference only; do not repeat it.\n\n'+text;
+    if(!silent||contextOnly)text='VSREQUEST'+crypto.randomUUID().replace(/-/g,'')+'END\nDelivery reference only; do not repeat it.\n\n'+text;
     busy = true;
     job = { requestId, phase: 'sending', text: '', url: location.origin + location.pathname, receipt: silent ? null : text.match(/^VSREQUEST[a-f0-9]{32}END/)?.[0] };
     let clicked = false;
@@ -289,6 +289,10 @@
         console.warn('[VaultSessions delivery-check]', JSON.stringify({version:VERSION,requestId,expectedLength:text.length,userCount:userBodies().length,newUserCount:userBodies().filter(e=>!previousMessages.has(messageKey(e))).length,generating:generating()}));
         throw new Error("送信ボタンを押しましたが、送信完了を確認できませんでした。自動再送はしません。ChatGPTの画面を確認してください。");
       }
+      if(contextOnly){
+        job.phase='complete';job.text='';job.url=location.origin+location.pathname;
+        return {ok:true,requestId,url:job.url,contextDelivered:true};
+      }
       job.phase = 'waiting';
       watching = true;
       watchReply(confirmed, previousReplies, previousUsers, text, silent);
@@ -336,6 +340,10 @@
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
+    if(message?.type==='ROUNDTABLE_CHATGPT_INSPECT'){
+      if(!globalThis.VaultInspectorDOM){sendResponse({ok:false,error:'Reload the official AI tab to enable Inspector.'});return;}
+      sendResponse({ok:true,report:VaultInspectorDOM.inspect('chatgpt',{editor:EDITORS,send:SEND,stop:STOP,user:USER_MESSAGE,reply:ASSISTANT,image:'img,canvas'},{phase:job?.phase,kind:job?.kind,busy,generating:generating()})});return;
+    }
     if (message?.type === 'ROUNDTABLE_CHATGPT_HELLO') {
       sendResponse({ ok: true, version: VERSION, ready: !!findEditor(), busy: busy || generating(), url: location.origin + location.pathname });
       return;
@@ -363,7 +371,7 @@
       return;
     }
     if (message?.type !== "ROUNDTABLE_CHATGPT_SEND") return;
-    send(message.text, message.requestId, message.silent === true, message.images).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
+    send(message.text, message.requestId, message.silent === true, message.images, message.contextOnly === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
     return true;
   });
 })();

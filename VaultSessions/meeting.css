@@ -60,3 +60,44 @@ body.side-panel .app-header{height:auto;min-height:88px;padding:16px;align-items
 .generated-image-gallery img { display: block; width: 100%; height: auto; max-height: 65vh; object-fit: contain; border-radius: 10px; }
 .image-job-topic { opacity: .75; font-size: .9em; overflow-wrap: anywhere; }
 .entry[data-type="image-generation"] .note { font-size: .85em; }
+
+/* Dev mode UI preview; the conversation remains the main workspace. */
+.dev-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:10px 24px;border-bottom:1px solid var(--line);flex-shrink:0;background:var(--rail)}
+.dev-tools button{font-size:12px;padding:6px 10px}.dev-mode-label,.settings-mode-badge{font-size:10px;font-weight:650;border:1px solid var(--line);border-radius:5px;padding:2px 5px;color:var(--green)}
+.settings-mode-badge{margin-left:7px}body.side-panel .dev-tools{padding:8px 12px;gap:5px}body.side-panel .dev-tools button{font-size:11px;padding:5px 7px}body.side-panel .compact-settings .settings-mode-badge{margin-left:0;margin-right:4px}
+
+/* Compact participant cards once a participant joins; details remain expandable. */
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded){padding:10px;border-radius:9px}
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded) header{display:flex;gap:8px}
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded) strong{font-size:13px}
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded) .badge{font-size:0;line-height:1}
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded) .badge:before{margin:0}
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded) .provider-menu{font-size:16px;padding:0 4px}
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded) .card-actions{margin-top:5px}
+body.has-participants:not(.side-panel) .provider-card.auto-compact:not(.is-expanded) .card-actions button{font-size:11px;padding:3px 6px}
+
+/* Connection actions belong inside the expanded participant card. */
+.provider-card.auto-compact:not(.is-expanded) .card-actions{display:none}
+
+
+/* One native settings disclosure in both layouts; language is display-only here. */
+#meeting-setup>summary .settings-language{margin-left:auto;font-size:11px;font-weight:400;color:var(--ink)}
+#meeting-setup>summary .chevron{margin-left:8px;transition:transform .15s}
+#meeting-setup[open]>summary .chevron{transform:rotate(180deg)}
+body.side-panel #meeting-setup,body.side-panel #meeting-setup:not([open]){display:block;margin:0;padding:0 14px;border-block:1px solid var(--line);max-height:32vh;overflow:auto}
+body.side-panel #meeting-setup>summary{display:flex;align-items:center;gap:8px;margin:0;padding:12px 0;font-size:12px;font-weight:400}
+body.side-panel #meeting-setup>summary>span:first-child{display:none}
+body.side-panel #meeting-setup>summary #ui-language{width:auto;padding:0;font-size:11px}
+
+/* Inspector and Document Brief presentation mock. */
+.brief-dialog{width:min(560px,calc(100vw - 24px));max-height:80vh;max-height:80dvh;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);box-shadow:0 20px 70px #0004;overflow:hidden}
+.brief-dialog[open]{display:flex;flex-direction:column}.brief-dialog::backdrop{background:#13251c66}.brief-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);flex-shrink:0}.brief-close{font-size:22px;padding:0 8px}.brief-hint{padding:12px 20px;color:var(--muted);font-size:12px;line-height:1.6;flex-shrink:0}.brief-list{overflow-y:auto;overscroll-behavior:contain;min-height:0;padding:0 12px 12px}.brief-record{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;text-align:left;margin-bottom:8px;padding:14px;background:var(--paper)}.brief-record strong{font-size:13px}.brief-record small{margin-top:6px}.brief-record>span:last-child{font-size:22px;color:var(--muted)}
+.dev-record .entry-body{width:100%;max-width:760px;border-style:dashed}.dev-record-heading{display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-size:.8em;color:var(--muted)}.dev-record-kind{font-weight:650;color:var(--green)}.dev-record-note{font-size:.8em;color:var(--muted);margin-top:8px}.dev-record-result{margin-top:12px;font-weight:600}.dev-record-table{width:100%;margin:12px 0;border-collapse:collapse;font-size:.9em}.dev-record-table caption{text-align:left;font-size:.85em;color:var(--muted);padding-bottom:5px}.dev-record-table th,.dev-record-table td{padding:5px 0;border-bottom:1px solid var(--line);text-align:left;font-weight:400}.dev-record-table td{text-align:right}.dev-record details{margin-top:10px}.dev-record summary{font-size:.85em}.dev-record pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8em;line-height:1.6;margin:10px 0 0}.dev-record .entry-body>p{margin-top:10px}body.side-panel .brief-dialog>header{padding:14px}body.side-panel .brief-hint{padding:10px 14px}
+
+.inspector-controls{display:flex;flex-direction:column;gap:12px;padding:20px;overflow-y:auto;min-height:0}.inspector-controls label{font-size:13px;font-weight:600}.inspector-controls select{width:100%;padding:10px}.inspector-controls .note{line-height:1.6}.inspector-run{align-self:flex-end;background:var(--green);color:var(--paper)}
+
+/* Explicitly folding participant details also works for recovery/error cards. */
+.provider-card.participant-collapsed> :not(header){display:none!important}
+.provider-card.participant-collapsed{padding:10px;border-radius:9px}
+
+.inspector-error-hint{align-self:flex-start;margin:4px 16px 8px;padding:4px 9px;font-size:11px}

@@ -29,6 +29,7 @@
 - **Diskusi kelompok yang alami.** AI yang terhubung berbicara bergiliran, memberi sudut pandang baru, dan melewati giliran jika tidak ada tambahan. Jika hanya satu AI terhubung, AI tersebut menjawab sekali.
 - **Pilih penjawab pertama secara alami.** Gunakan `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, atau `To Gemini`. Tanpa penunjukan, penjawab pertama dipilih secara acak.
 - **Bagikan konteks visual.** Lampirkan atau tempel hingga empat gambar dan diskusikan berdasarkan nomornya.
+- **Tetap mengobrol saat ChatGPT atau Gemini membuat gambar.** Saat pembuatan gambar bawaan terdeteksi, AI yang membuat gambar sementara tidak dapat digunakan dan Anda dapat berbicara dengan AI lain yang terhubung. Pratinjau yang selesai muncul bersama permintaan awal tanpa memulai putaran diskusi baru. VS menampilkan pratinjau terkompresi; gambar asli tersedia di chat resmi. Kegagalan pembuatan atau pengambilan dan batas waktu ditampilkan di log; AI kembali otomatis setelah chat resminya siap. Biarkan tab resmi terbuka; kemajuan di latar belakang bergantung pada penyedia dan browser. Kode dan berkas SVG dari Claude juga didukung: VS menghapus skrip dan referensi eksternal lalu mengubahnya menjadi pratinjau raster.
 - **Bagikan halaman saat ini.** Jika diinginkan, sertakan teks halaman yang dapat dibaca sebagai bahan referensi rapat.
 - **Ringkas dan salin.** Buat ringkasan untuk ditinjau kembali atau dipakai dalam rapat berikutnya.
 - **Panel samping dan tampilan diperluas.** Beralih tata letak, sembunyikan kontrol peserta, dan sesuaikan ukuran teks log.

@@ -1,9 +1,9 @@
 "use strict";
 
 const uiText = text => globalThis.VaultI18n ? VaultI18n.message(text) : text;
-const VERSION = '0.16.0';
+const VERSION = '0.1.0';
 // Accept compatible service workers after UI-only updates.
-const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.16.0']);
+const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.0']);
 const meetingClientId = crypto.randomUUID();
 let meetingActive = true;
 let summaryBusy = false;
@@ -70,6 +70,10 @@ const runRows = new Map();
 const controller = new RoundtableDiscussion.DiscussionController({
   languageNames: globalThis.VaultI18n?.locales.map(item=>item.meetingLanguage),
   order: Object.keys(providers), names: Object.fromEntries(Object.entries(providers).map(([id, value]) => [id, value.name])),
+  getManual: ({question,language:answerLanguage}) => VaultManual.prompt(question,answerLanguage,VaultManual.capture(document,{
+    view:isSidePanel?'sidepanel':'fullscreen',uiLanguage:VaultI18n.locale,mode:document.querySelector('#meeting-mode').value,protocol:location.protocol,
+    connections:Object.keys(providers).map(id=>({name:providers[id].name,connected:!!targets[id],available:!!targets[id]&&!imageJobs?.isBusy(id)}))
+  },key=>VaultI18n.t(key))),
   getTarget: id => targets[id], isAvailable: id => !imageJobs?.isBusy(id), exchange,
   recoverRole: async (provider, text) => {
     const result = await request({ type: 'ROUNDTABLE_RECOVER_ROLE', provider, text, ...targets[provider] });
@@ -100,6 +104,14 @@ function providerStatus(id, state, text) {
 }
 function renderParticipants() {
   const ids = Object.keys(providers).filter(id => targets[id] && !connecting.has(id));
+  const wasConnected = document.body.classList.contains('has-participants');
+  document.body.classList.toggle('has-participants', ids.length > 0);
+  if (!wasConnected && ids.length) {
+    for (const card of Object.values(cards)) {
+      card.element.classList.remove('is-expanded');
+      card.element.querySelector('.provider-menu').setAttribute('aria-expanded', 'false');
+    }
+  }
   participants.textContent = ids.length ? VaultI18n.t('message_006', {0:ids.map(id => providers[id].name).join(' / ')}) : VaultI18n.t('message_007');
   connection.textContent = ids.map(id => `${providers[id].name}: ${targets[id].conversationUrl}`).join('\n');
   for (const id of Object.keys(providers)) {
@@ -133,6 +145,7 @@ function syncControls() {
 // Image delivery can spend 60 seconds attaching files, plus editor/button/receipt waits.
 // Keep the UI deadline beyond the bridge deadline; ordinary calls still fail promptly.
 function requestTimeout(message) {
+  if(['ROUNDTABLE_INSPECTOR_CONTEXT','ROUNDTABLE_INSPECTOR_SHARE'].includes(message.type))return 60000;
   return message.type === 'ROUNDTABLE_SEND' && message.images?.length ? 110000 : 30000;
 }
 async function request(message) {
@@ -245,6 +258,12 @@ function createInvitationCard(id) {
   document.querySelector('#invitations').append(element);
   const toggleCard=()=>{
     const card=cards[id];
+    if(element.classList.contains('participant-collapsed')){
+      element.classList.remove('participant-collapsed');
+      element.classList.add('is-expanded');
+      element.querySelector('.provider-menu').setAttribute('aria-expanded','true');
+      return;
+    }
     if(!targets[id]&&(card.autoIssue||card.status.dataset.state==='error')){
       automaticInvitations?.pause(id);clearInvitationIssue(id);
       element.classList.remove('is-expanded');
@@ -436,6 +455,12 @@ function discussionEvent(event) {
       counters.textContent = VaultI18n.t('message_055', {0:event.speeches,1:event.queries,2:event.passes});
       setStatus('sending', VaultI18n.t('message_056', {0:providers[event.provider].name}));
       break;
+    case 'manual':
+      removeAnswer(record);
+      answerRow(record,event.provider);
+      setStatus('sending',VaultI18n.t('manualReading',{0:providers[event.provider].name}));
+      counters.textContent=VaultI18n.t('message_055',{0:event.speeches,1:event.queries,2:event.passes});
+      break;
     case 'progress': {
       // Do not display partial control signals as ordinary contributions.
       if (!event.text.trim() || '[PASS]'.startsWith(event.text.trim())) break;
@@ -530,7 +555,7 @@ form.addEventListener('submit', event => {
       maxSpeeches: Number(document.querySelector('#max-speeches').value),
       maxQueries: Number(document.querySelector('#max-queries').value), language: language.value });
     if (isSidePanel) document.querySelector('#meeting-setup').open = false;
-    input.value = ''; input.blur(); clearImage(); syncControls();
+    input.value = ''; globalThis.VaultComposerSize?.resize(); input.blur(); clearImage(); syncControls();
   } catch (error) { setStatus('error', error.message); }
 });
 async function addImageFiles(files) {

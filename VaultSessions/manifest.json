@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
   "name": "VaultSessions",
-  "version": "0.16.0",
+  "version": "0.1.0",
   "description": "Discuss with your signed-in ChatGPT, Gemini, and Claude in one shared meeting.",
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open VaultSessions sidebar",
+    "default_title": "Open VaultSessions side panel",
     "default_icon": {
       "16": "icons/leaf-16.png",
       "32": "icons/leaf-32.png",
@@ -26,6 +26,7 @@
         "https://chatgpt.com/*"
       ],
       "js": [
+        "inspector-dom.js",
         "image-utils.js",
         "generated-images.js",
         "content-images.js",
@@ -39,6 +40,7 @@
         "https://gemini.google.com/*"
       ],
       "js": [
+        "inspector-dom.js",
         "image-utils.js",
         "generated-images.js",
         "generated-gemini-images.js",
@@ -53,6 +55,7 @@
         "https://claude.ai/*"
       ],
       "js": [
+        "inspector-dom.js",
         "image-utils.js",
         "generated-images.js",
         "claude-svg.js",

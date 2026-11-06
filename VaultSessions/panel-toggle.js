@@ -11,13 +11,15 @@
     panel.hidden=!visible;
     document.body.classList.toggle('panel-collapsed',!visible);
     button.setAttribute('aria-expanded',String(visible));
-    const key=visible?'hideParticipantsPanel':'showParticipantsPanel';
+    const fullscreen=!document.body.classList.contains('side-panel');
+    const key=fullscreen?(visible?'hideSidebar':'showSidebar'):(visible?'hideParticipantsPanel':'showParticipantsPanel');
     button.dataset.i18nAria=key;button.dataset.i18nTitle=key;
     button.setAttribute('aria-label',VaultI18n.t(key));button.title=VaultI18n.t(key);
     if(bottom)log.scrollTop=log.scrollHeight;
     else if(anchor)log.scrollTop+=anchor.getBoundingClientRect().top-log.getBoundingClientRect().top-offset;
   }
+  const initialKey=document.body.classList.contains('side-panel')?'hideParticipantsPanel':'hideSidebar';
+  button.dataset.i18nAria=initialKey;button.dataset.i18nTitle=initialKey;
+  button.setAttribute('aria-label',VaultI18n.t(initialKey));button.title=VaultI18n.t(initialKey);
   button.addEventListener('click',()=>show(panel.hidden));
-  // The existing settings action must reveal the panel before opening its details.
-  document.querySelector('#settings-toggle').addEventListener('click',()=>show(true),true);
 })();

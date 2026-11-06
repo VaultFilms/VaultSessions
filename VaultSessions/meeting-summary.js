@@ -24,6 +24,8 @@
    resultRow=addEntry('assistant',VaultI18n.t('summarizing'),id);resultRow.entry.dataset.type='summary';resultRow.meta.textContent=VaultI18n.t('summaryLabel');
    const result=await exchange(id,text);
    if(!result.text?.trim())throw Error(VaultI18n.t('summaryEmpty'));
+   const savedDocument=VaultDocuments.addSummary(result.text,providers[id].name);
+   resultRow.entry.dataset.recordId=savedDocument.id;
    RoundtableLinks.render(resultRow.body,result.text);decorate(resultRow);
    // Clear the display and regular history only after a successful summary response.
    for(const row of [...log.querySelectorAll('.entry')])if(row!==resultRow.entry&&!(row.dataset.type==='image-generation'&&row.dataset.imageTask&&imageJobs?.tasks.has(JSON.parse(row.dataset.imageTask).requestId)))row.remove();

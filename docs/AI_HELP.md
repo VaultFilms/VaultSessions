@@ -1,0 +1,15 @@
+# AI-assisted VaultSessions help
+
+Users can ask a connected AI about VaultSessions in their normal meeting language. If the intended application is ambiguous, the meeting instructions ask the AI to confirm that the user means VaultSessions first. For a VaultSessions-specific question, the AI can return exactly `[VS_MANUAL_REQUEST]` to request the current manual. Merely mentioning or quoting that token does not trigger retrieval.
+
+VaultSessions intercepts that response, reads the local English manual in `VaultSessions/app-manual.js`, and supplies the same AI with a current UI snapshot and the human question. No documentation server or extra network fetch is involved. The manual is sent as a normal message in the signed-in official AI conversation, so that provider receives its contents. Only the resulting explanation enters the meeting log and normal shared transcript; the control signal and full manual do not.
+
+The snapshot includes the current UI language and exact labels from the existing nine i18n catalogs, Chat/Dev mode, side panel/fullscreen layout, participant/settings/attachment expansion, connection availability, and known controls' current visibility and disabled state. Each documented control has an icon description, locations for both layouts, behavior and display conditions. It does not capture arbitrary webpage DOM, credentials, user input drafts, or the full meeting log. Local file paths and official conversation URLs are not included in the UI snapshot.
+
+The manual describes ordinary chat, mentions and automatic turns, attachments, generated images, page references, temporary storage, view switching, log sizing, summaries, Inspector, Document Brief, and the two-stage handoff. It explicitly identifies Materials as a placeholder. It also explains the project's personalized-AI meeting concept and the optional discussion → diagnosis → coding-agent handoff → reviewed OSS contribution workflow.
+
+The short help guidance is included in newly applied meeting Roles and refreshed in ordinary meeting prompts. Previously verified Roles are not automatically reset or resent merely to teach this feature. Manual capture happens at request time, so changing the UI language or layout changes the next reference automatically. When editing UI behavior or positions, update `app-manual.js` as well.
+
+A manual follow-up counts against the discussion request limit, not the contribution count. The controller permits at most one manual delivery per participant per human topic, checks conversation identity, respects stopping, and refuses repeated requests instead of looping. No additional AI is invited and no user action is automatically performed. Normal discussion ordering and PASS handling remain in force. Unknown or ambiguous controls should cause the AI to ask for a label or screenshot, not claim it inspected one.
+
+Request recognition and routing are deterministic; whether an AI follows the help instructions or explains accurately still depends on that provider. Automated tests and mocked browser checks validate routing and UI metadata, not real model compliance.
