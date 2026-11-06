@@ -326,6 +326,8 @@ VaultI18n.register("hi", {
     "inspectionWait": "बातचीत, कनेक्शन या चित्र निर्माण पूरा होने दें।",
     "inspectionContext": "Inspector संदर्भ तैयार हो रहा है",
     "inspectionReading": "चुने हुए AI टैब की जाँच हो रही है…",
-    "inspectionInvalid": "अमान्य रिपोर्ट। एक्सटेंशन और AI टैब फिर लोड करें।"
+    "inspectionInvalid": "अमान्य रिपोर्ट। एक्सटेंशन और AI टैब फिर लोड करें।",
+    "imageRelayBusy": "इमेज शेयर की जा रही है",
+    "imageRelayFailed": "इमेज शेयर करना पूरा नहीं हो सका। आधिकारिक चैट देखें।"
   }
 });

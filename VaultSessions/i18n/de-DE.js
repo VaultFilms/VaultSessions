@@ -342,6 +342,8 @@ VaultI18n.register("de-DE", {
     "inspectionWait": "Gespräch, Verbindung oder Bilderzeugung zuerst abschließen lassen.",
     "inspectionContext": "Inspector-Kontext wird vorbereitet",
     "inspectionReading": "Ausgewählter KI-Tab wird geprüft…",
-    "inspectionInvalid": "Ungültiger Bericht. Erweiterung und KI-Tabs neu laden."
+    "inspectionInvalid": "Ungültiger Bericht. Erweiterung und KI-Tabs neu laden.",
+    "imageRelayBusy": "Bild wird geteilt",
+    "imageRelayFailed": "Das Bild konnte nicht vollständig geteilt werden. Prüfe den offiziellen Chat."
   }
 });

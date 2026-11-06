@@ -342,6 +342,8 @@ VaultI18n.register("fr-FR", {
     "inspectionWait": "Attendez la fin de la conversation, de la connexion ou de la génération.",
     "inspectionContext": "Préparation du contexte Inspector",
     "inspectionReading": "Inspection de l’onglet sélectionné…",
-    "inspectionInvalid": "Rapport invalide. Rechargez l’extension et les onglets IA."
+    "inspectionInvalid": "Rapport invalide. Rechargez l’extension et les onglets IA.",
+    "imageRelayBusy": "Partage de l’image",
+    "imageRelayFailed": "Le partage de l’image n’a pas pu être terminé. Consultez le chat officiel."
   }
 });

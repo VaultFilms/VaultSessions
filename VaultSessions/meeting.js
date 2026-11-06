@@ -1,9 +1,16 @@
 "use strict";
 
 const uiText = text => globalThis.VaultI18n ? VaultI18n.message(text) : text;
-const VERSION = '0.1.0';
+function renderResponse(element,text,richText){
+  if(globalThis.RoundtableRichText)RoundtableRichText.render(element,text,richText);
+  else RoundtableLinks.render(element,text);
+}
+function responseText(element){
+  return globalThis.RoundtableRichText?.read(element)?.text ?? element?.innerText ?? element?.textContent ?? '';
+}
+const VERSION = '0.1.1';
 // Accept compatible service workers after UI-only updates.
-const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.0']);
+const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.1']);
 const meetingClientId = crypto.randomUUID();
 let meetingActive = true;
 let summaryBusy = false;
@@ -54,7 +61,9 @@ const reloadExtension = document.querySelector('#reload-extension');
 const participants = document.querySelector('#participants');
 const targets = {};
 let imageJobs = null;
-const providerAvailable = id => !!targets[id] && !imageJobs?.isBusy(id);
+let imageRelays = null;
+const providerExchanges = new Map();
+const providerAvailable = id => !!targets[id] && !imageJobs?.isBusy(id) && !imageRelays?.isBusy(id);
 const cards = {};
 const connecting = new Set();
 let automaticInvitations = null;
@@ -72,9 +81,9 @@ const controller = new RoundtableDiscussion.DiscussionController({
   order: Object.keys(providers), names: Object.fromEntries(Object.entries(providers).map(([id, value]) => [id, value.name])),
   getManual: ({question,language:answerLanguage}) => VaultManual.prompt(question,answerLanguage,VaultManual.capture(document,{
     view:isSidePanel?'sidepanel':'fullscreen',uiLanguage:VaultI18n.locale,mode:document.querySelector('#meeting-mode').value,protocol:location.protocol,
-    connections:Object.keys(providers).map(id=>({name:providers[id].name,connected:!!targets[id],available:!!targets[id]&&!imageJobs?.isBusy(id)}))
+    connections:Object.keys(providers).map(id=>({name:providers[id].name,connected:!!targets[id],available:providerAvailable(id)}))
   },key=>VaultI18n.t(key))),
-  getTarget: id => targets[id], isAvailable: id => !imageJobs?.isBusy(id), exchange,
+  getTarget: id => targets[id], isAvailable: id => !imageJobs?.isBusy(id) && !imageRelays?.isBusy(id), exchange,
   recoverRole: async (provider, text) => {
     const result = await request({ type: 'ROUNDTABLE_RECOVER_ROLE', provider, text, ...targets[provider] });
     return result.recovered === true;
@@ -117,7 +126,7 @@ function renderParticipants() {
   for (const id of Object.keys(providers)) {
     cards[id].invite.textContent = connecting.has(id) ? VaultI18n.t('message_008') : targets[id] ? VaultI18n.t('message_004') : VaultI18n.t('message_009', {0:providers[id].name});
     cards[id].leave.hidden = !targets[id] || connecting.has(id);
-    cards[id].badge.textContent = imageJobs?.isBusy(id) ? VaultI18n.t('imageJobGenerating') : connecting.has(id) ? VaultI18n.t('message_003') : targets[id] ? VaultI18n.t('message_004') : VaultI18n.t('message_005');
+    cards[id].badge.textContent = imageJobs?.isBusy(id) ? VaultI18n.t('imageJobGenerating') : imageRelays?.isBusy(id) ? VaultI18n.t('imageRelayBusy') : connecting.has(id) ? VaultI18n.t('message_003') : targets[id] ? VaultI18n.t('message_004') : VaultI18n.t('message_005');
   }
   syncControls();
 }
@@ -140,7 +149,7 @@ function syncControls() {
     for (const control of [card.select, card.reload, card.allow, card.roleRetry]) control.disabled = connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring;
   }
   renderAutomaticCards();
-  document.querySelector('#switch-view').disabled = viewSwitching || (controller.running || summaryBusy) || isConnecting() || imageLoading || meetingRestoring;
+  document.querySelector('#switch-view').disabled = viewSwitching || imageRelays?.busy || (controller.running || summaryBusy) || isConnecting() || imageLoading || meetingRestoring;
 }
 // Image delivery can spend 60 seconds attaching files, plus editor/button/receipt waits.
 // Keep the UI deadline beyond the bridge deadline; ordinary calls still fail promptly.
@@ -165,7 +174,7 @@ async function request(message) {
   }
   if (!result?.ok) {
     const error = new Error(result?.error || VaultI18n.t('message_016'));
-    Object.assign(error, { code: result?.code, candidates: result?.candidates, targetTabId: result?.targetTabId });
+    Object.assign(error, { uncertain: result?.uncertain, retry: result?.retry, code: result?.code, candidates: result?.candidates, targetTabId: result?.targetTabId });
     throw error;
   }
   return result;
@@ -301,7 +310,7 @@ function createInvitationCard(id) {
   card.leave.addEventListener('click', () => {
     if (connecting.has(id) || pendingDepartures.has(id)) return;
     automaticInvitations?.pause(id);
-    if((controller.running || summaryBusy)){
+    if((controller.running || summaryBusy)||imageRelays?.isBusy(id)){
       pendingDepartures.add(id);controller.stop();
       providerStatus(id,'sending',VaultI18n.t('message_026'));syncControls();
     }else leaveProvider(id);
@@ -348,6 +357,20 @@ function addEntry(role, text, id) {
 // Serialize providers requiring foreground access until retrieval finishes, preventing focus contention.
 let foregroundTail = Promise.resolve();
 async function exchange(id, text, options = {}) {
+  providerExchanges.set(id,(providerExchanges.get(id)||0)+1);
+  try {
+    while(imageRelays?.isBusy(id)) {
+      if(!meetingActive||pendingDepartures.has(id))throw Error('The recipient is unavailable.');
+      await new Promise(resolve=>setTimeout(resolve,300));
+    }
+    return await exchangeForeground(id,text,options);
+  } finally {
+    const count=providerExchanges.get(id)-1;
+    if(count)providerExchanges.set(id,count);else providerExchanges.delete(id);
+    void imageRelays?.poll();
+  }
+}
+async function exchangeForeground(id, text, options = {}) {
   if (!providers[id].foreground) return performExchange(id, text, options);
   const previous = foregroundTail;
   let release;
@@ -359,7 +382,7 @@ async function exchange(id, text, options = {}) {
     return await performExchange(id, text, options);
   } finally { release(); }
 }
-async function performExchange(id, text, { silent = false, images = [], requestId = crypto.randomUUID(), onProgress = () => {} } = {}) {
+async function performExchange(id, text, { silent = false, requireReply = false, images = [], requestId = crypto.randomUUID(), onProgress = () => {} } = {}) {
   await request({ type: 'ROUNDTABLE_HELLO' });
   // Side-panel pages have no own tab. Continue the meeting in the panel after switching to an AI tab.
   const ownTab = providers[id].foreground ? (isSidePanel ? (await chrome.tabs.query({active:true,currentWindow:true}))[0] : await chrome.tabs.getCurrent()) : null;
@@ -371,7 +394,7 @@ async function performExchange(id, text, { silent = false, images = [], requestI
   };
   if (!silent && run?.cancelled) return { cancelledBeforeSend: true };
   stage(images.length ? VaultI18n.t('message_036') : VaultI18n.t('message_037'));
-  const result = await request({ type: 'ROUNDTABLE_SEND', provider: id, guardText: VaultI18n.t('inputGuardNotice'), text, images, requestId, silent, returnTabId: ownTab?.id, ...targets[id] });
+  const result = await request({ type: 'ROUNDTABLE_SEND', provider: id, guardText: VaultI18n.t('inputGuardNotice'), text, images, requestId, silent, requireReply, returnTabId: ownTab?.id, ...targets[id] });
   targets[id] = { tabId: result.tabId, conversationUrl: result.url };
   renderConnection();
   stage(VaultI18n.t('message_038'));
@@ -385,9 +408,9 @@ async function performExchange(id, text, { silent = false, images = [], requestI
       const completed = state.phase === 'complete' ? await request({type:'ROUNDTABLE_IMAGE_RESULT',provider:id,tabId:result.tabId,requestId}) : null;
       return {detachedImage:true,images:completed?.images,task:{provider:id,tabId:result.tabId,requestId,conversationUrl:state.url||targets[id].conversationUrl,startedAt:Date.now(),topic:run.text.slice(0,1000)}};
     }
-    if (state.phase === 'complete') { stage(VaultI18n.t('message_040')); return { text: state.text || '', url: state.url }; }
+    if (state.phase === 'complete') { stage(VaultI18n.t('message_040')); return { text: state.text || '', richText:state.richText, url: state.url }; }
     stage(state.phase === 'streaming' ? VaultI18n.t('message_041') : VaultI18n.t('message_038'));
-    if (!silent) onProgress(state.text || '');
+    if (!silent) onProgress(state.text || '',state.richText);
     await new Promise(resolve => setTimeout(resolve, 800));
   }
   throw new Error(VaultI18n.t('message_042'));
@@ -468,7 +491,7 @@ function discussionEvent(event) {
       clearNotice(record);
       row.pending = false; row.entry.classList.remove('pending');
       row.body.removeAttribute('role');
-      RoundtableLinks.render(row.body, event.text); row.meta.textContent = VaultI18n.t('message_057');
+      renderResponse(row.body,event.text,event.richText); row.meta.textContent = VaultI18n.t('message_057');
       break;
     }
     case 'image-detached': {
@@ -482,7 +505,7 @@ function discussionEvent(event) {
       clearNotice(record);
       row.pending = false; row.entry.classList.remove('pending');
       row.body.removeAttribute('role');
-      RoundtableLinks.render(row.body, event.text); row.meta.textContent = VaultI18n.t('message_058');
+      renderResponse(row.body,event.text,event.richText); row.meta.textContent = VaultI18n.t('message_058');
       if (!record.firstReplyShown) {
         record.firstReplyShown = true;
         scrollToLatest();
@@ -534,8 +557,7 @@ function discussionEvent(event) {
       setStatus('error', event.error);
       break;
     case 'idle':
-      for(const id of pendingDepartures)leaveProvider(id);
-      pendingDepartures.clear();
+      for(const id of [...pendingDepartures])if(!imageRelays?.isBusy(id)){pendingDepartures.delete(id);leaveProvider(id);}
       automaticInvitations?.schedule();
       speaker.textContent = VaultI18n.t('message_073');
       syncControls();
@@ -675,6 +697,7 @@ function clearInvitationIssue(id){
   }
 }
 function leaveProvider(id) {
+  imageRelays?.forget(id);
   const card=cards[id];delete targets[id];card.autoIssue=false;
 
   card.picker.hidden=true;card.recovery.hidden=true;card.allow.hidden=true;card.roleRetry.hidden=true;card.roleTarget=null;card.pendingTabId=null;

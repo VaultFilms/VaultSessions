@@ -2,6 +2,7 @@
 
 // Discussion flow and prompt construction, independent of provider DOM and Chrome APIs.
 (function (root) {
+  const Rich = typeof module !== 'undefined' && module.exports ? require('./rich-text.js') : root.RoundtableRichText;
   const Images = typeof module !== 'undefined' && module.exports ? require('./image-utils.js') : root.RoundtableImages;
   const Manual = typeof module !== 'undefined' && module.exports ? require('./app-manual.js') : root.VaultManual;
   const manualRequest = text => typeof text==='string'&&text.trim()===Manual.SIGNAL;
@@ -275,7 +276,7 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
         this.emit('turn', { runId: run.id, provider: id, ...this.counts(run) });
         let result = await this.exchange(id, prompt.text, {
           silent: false, images: run.imagesDelivered.has(id) ? [] : run.images,
-          onProgress: text => { if (!run.cancelled && !run.automatic && !passLike(text) && !manualProgress(text)) this.emit('progress', { runId: run.id, provider: id, text }); }
+          onProgress: (text,richText) => { if (!run.cancelled && !run.automatic && !passLike(text) && !manualProgress(text)) this.emit('progress', { runId: run.id, provider: id, text, ...(richText?{richText}:{}) }); }
         });
         if (result.cancelledBeforeSend && run.cancelled) break;
         run.imagesDelivered.add(id);
@@ -298,7 +299,7 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
           if(typeof manual!=='string'||!manual.trim()||manual.length>20000)throw Error('The VaultSessions manual is unavailable.');
           run.manualDelivered.add(id);run.queries++;
           this.emit('manual',{runId:run.id,provider:id,...this.counts(run)});
-          result=await this.exchange(id,manual,{silent:false,onProgress:text=>{if(!run.cancelled&&!run.automatic&&!passLike(text)&&!manualProgress(text))this.emit('progress',{runId:run.id,provider:id,text});}});
+          result=await this.exchange(id,manual,{silent:false,onProgress:(text,richText)=>{if(!run.cancelled&&!run.automatic&&!passLike(text)&&!manualProgress(text))this.emit('progress',{runId:run.id,provider:id,text,...(richText?{richText}:{})});}});
           if(run.cancelled){this.emit('discarded',{runId:run.id,provider:id});break;}
           if(this.getTarget(id)?.tabId!==target.tabId||this.getTarget(id)?.conversationUrl!==target.conversationUrl)throw Error('The AI conversation changed before manual delivery.');
           if(manualRequest(result.text))throw Error('The AI requested the manual repeatedly. The discussion was stopped.');
@@ -317,6 +318,7 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
           const repaired = await this.exchange(id, repairPrompt(run.language), { silent: false });
           if (run.cancelled) { this.emit('discarded', { runId: run.id, provider: id }); break; }
           parsed = typeof repaired.text === 'string' ? parseReply(repaired.text, true) : { kind: 'invalid' };
+          result={...repaired,richText:Rich?.stripPrefix(repaired.richText,'[SPEAK]')};
           if (parsed.kind === 'invalid') {
             this.emit('protocol-warning', { runId: run.id, provider: id, text: repaired.text || '(empty response)' });
             throw new Error(`${this.names[id]}のPASS形式を1回の修正依頼でも確認できませんでした。回答は共有せず議論を停止しました。形式エラーの詳細を確認してください。`);
@@ -329,7 +331,7 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
           run.passes = 0; run.speeches++;
           const entry = { seq: this.history.length + 1, speaker: this.names[id], text: parsed.text, runId: run.id };
           this.history.push(entry); this.remember(id, entry.seq);
-          this.emit('reply', { runId: run.id, provider: id, text: parsed.text, ...this.counts(run) });
+          this.emit('reply', { runId: run.id, provider: id, text: parsed.text, ...(result.richText?{richText:result.richText}:{}), ...this.counts(run) });
         }
         if (!run.automatic || available.length < 2) { this.emit('ended', { runId: run.id, reason: 'normal', ...this.counts(run) }); return; }
         if (run.passes >= available.length) { this.emit('ended', { runId: run.id, reason: 'all-pass', ...this.counts(run) }); return; }

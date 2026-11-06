@@ -342,6 +342,8 @@ VaultI18n.register("en", {
     "inspectionWait": "Wait until the current conversation, connection, or image generation finishes.",
     "inspectionContext": "Preparing Inspector context",
     "inspectionReading": "Reading the selected AI tab…",
-    "inspectionInvalid": "Invalid Inspector report. Reload the extension and official AI tabs."
+    "inspectionInvalid": "Invalid Inspector report. Reload the extension and official AI tabs.",
+    "imageRelayBusy": "Sharing image",
+    "imageRelayFailed": "Image sharing could not be completed. Check the official chat."
   }
 });

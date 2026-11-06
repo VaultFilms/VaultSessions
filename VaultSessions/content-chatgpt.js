@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.2';
+  const VERSION = '0.9.4';
   // ProseMirror and the Japanese send label were verified in normal Chat UI on 2026-10-29.
   // English labels, #prompt-textarea, and data-testid are compatibility candidates not verified in that session.
   // Message bodies, IDs, and turn states were verified in the current UI; retain legacy fallbacks.
@@ -129,6 +129,7 @@
     let userKey = messageKey(userMessage), missingSince = null;
     const expectedText = messageText(prompt), expectedIndex = previousUsers.length;
     let imageReadySince = null;
+    let relayReadySince=null;
     let imageSignature = '';
     const pendingPath = value => /^\/c\/local-chatgpt(?::|%3a)[^/]+\/?$/i.test(value);
     const savedPath = value => /^\/c\/[^/]+\/?$/.test(value) && !pendingPath(value);
@@ -188,9 +189,23 @@
         !previousReplies.has(messageKey(element)) &&
         (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
       const reply = replies.at(-1);
+      if(job.imageRelay) {
+        const turn=reply?.closest('[data-talvt-turn-state]');
+        const completed=reply && (turn ? turn.getAttribute('data-talvt-turn-state')==='complete' : !!reply.closest('article, [data-testid^="conversation-turn-"]')?.querySelector('button[data-testid="copy-turn-action-button"]'));
+        const settled=(completed || (!reply && savedPath(path) && silentRoleSettled(userMessage))) && savedPath(path);
+        if(settled && !generating()) {
+          relayReadySince ??= Date.now();
+          if(Date.now()-relayReadySince>=1500){endJob('complete');return;}
+        }else relayReadySince=null;
+        if(Date.now()-started>20*60*1000)endJob('error','Image sharing response timed out. Check the official chat.');
+        return;
+      }
       if (reply) {
         const text = bodyText(reply);
-        if (text !== job.text) { job.text = text; lastChange = Date.now(); }
+        if (text !== job.text) {
+          job.text = text; lastChange = Date.now();
+          if(!silent)job.richText=globalThis.RoundtableRichText?.captureReply(reply,'chatgpt')||null;
+        }
         if (text) job.phase = 'streaming';
         const turn = reply.closest('[data-talvt-turn-state]');
         const legacyTurn = reply.closest('article, [data-testid^="conversation-turn-"]');
@@ -198,6 +213,7 @@
         const completed = turn ? turn.getAttribute('data-talvt-turn-state') === 'complete' : legacyComplete;
         // Wait for a saved URL even if the reply finishes first; otherwise the next turn uses a stale target.
         if ((text || silent) && completed && !pendingPath(path) && !generating() && Date.now() - lastChange >= 1000) {
+          if(!silent)job.richText=globalThis.RoundtableRichText?.captureReply(reply,'chatgpt')||null;
           endJob('complete'); return;
         }
       }
@@ -226,13 +242,13 @@
     tick();
   }
 
-  async function send(text, requestId, silent, images = [], contextOnly = false) {
+  async function send(text, requestId, silent, images = [], contextOnly = false, imageRelay = false) {
     if (busy) throw new Error("このChatGPTタブで送信処理中です。");
     if (typeof text !== "string" || !text.trim() || text.length > 20000) throw new Error("入力が空か、20,000文字を超えています。");
     // Keep role recovery compatible; add a one-time receipt only to normal messages.
-    if(!silent||contextOnly)text='VSREQUEST'+crypto.randomUUID().replace(/-/g,'')+'END\nDelivery reference only; do not repeat it.\n\n'+text;
+    if(!silent||contextOnly||imageRelay)text='VSREQUEST'+crypto.randomUUID().replace(/-/g,'')+'END\nDelivery reference only; do not repeat it.\n\n'+text;
     busy = true;
-    job = { requestId, phase: 'sending', text: '', url: location.origin + location.pathname, receipt: silent ? null : text.match(/^VSREQUEST[a-f0-9]{32}END/)?.[0] };
+    job = { requestId, imageRelay, phase: 'sending', text: '', url: location.origin + location.pathname, receipt: silent && !imageRelay ? null : text.match(/^VSREQUEST[a-f0-9]{32}END/)?.[0] };
     let clicked = false;
     let watching = false;
     try {
@@ -366,12 +382,12 @@
       if (job?.requestId === message.requestId) refreshWatch?.();
       const {images: cachedImages, ...state} = job || {};
       sendResponse(job?.requestId === message.requestId
-        ? { ok: true, ...state }
+        ? { ok: true, ...state, ...(job.imageRelay ? {text:'',richText:null} : {}) }
         : { ok: false, error: '回答の取得状態が見つかりません。ChatGPTを再読み込みした場合は取得が中断されます。' });
       return;
     }
     if (message?.type !== "ROUNDTABLE_CHATGPT_SEND") return;
-    send(message.text, message.requestId, message.silent === true, message.images, message.contextOnly === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
+    send(message.text, message.requestId, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
     return true;
   });
 })();

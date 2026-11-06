@@ -323,6 +323,8 @@ VaultI18n.register("ja", {
     "inspectionWait": "会話・接続・画像生成の処理が終わってから実行してください。",
     "inspectionContext": "Inspectorの説明を準備中",
     "inspectionReading": "選択したAIタブを検査中…",
-    "inspectionInvalid": "検査結果が不正です。拡張機能と公式AIタブを再読み込みしてください。"
+    "inspectionInvalid": "検査結果が不正です。拡張機能と公式AIタブを再読み込みしてください。",
+    "imageRelayBusy": "画像を共有中",
+    "imageRelayFailed": "画像の共有を完了できませんでした。公式チャットを確認してください。"
   }
 });

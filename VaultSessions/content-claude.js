@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.10.1';
+  const VERSION = '0.10.3';
   // Input, sending, and a test response were verified in signed-in Claude on 2026-10-29.
   const EDITORS = ['[data-testid="chat-input"][contenteditable="true"]'];
   const SEND = "button[data-testid=\"chat-input-send\"], button[aria-label=\"メッセージを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -121,6 +121,7 @@
     const expectedText = canonicalText(prompt);
     const matches = element => userText(element).includes(receipt) || canonicalText(userText(element)) === expectedText;
     let missingSince = null;
+    let relayReadySince=null;
     let svgSource = '', svgChangedAt = Date.now(), capturing = false;
     const homePath = value => value === '/new' || value === '/';
     const savedPath = value => /^\/chat\/[^/]+\/?$/.test(value);
@@ -177,12 +178,25 @@
           return;
         }
       }
+      if(job.imageRelay) {
+        const settled=reply?.getAttribute('data-is-streaming')==='false' && savedPath(path);
+        if(settled && !generating()) {
+          relayReadySince ??= Date.now();
+          if(Date.now()-relayReadySince>=1500){endJob('complete');return;}
+        }else relayReadySince=null;
+        if(Date.now()-started>20*60*1000)endJob('error','Image sharing response timed out. Check the official chat.');
+        return;
+      }
       if (reply) {
         const text = bodyText(reply);
-        if (text !== job.text) { job.text = text; lastChange = Date.now(); }
+        if (text !== job.text) {
+          job.text = text; lastChange = Date.now();
+          if(!silent)job.richText=globalThis.RoundtableRichText?.captureReply(reply,'claude')||null;
+        }
         if (text) job.phase = 'streaming';
         const completed = reply.getAttribute('data-is-streaming') === 'false';
         if ((text || silent) && completed && !generating() && Date.now() - lastChange >= 1200) {
+          if(!silent)job.richText=globalThis.RoundtableRichText?.captureReply(reply,'claude')||null;
           endJob('complete'); return;
         }
       }
@@ -203,13 +217,13 @@
     tick();
   }
 
-  async function send(text, requestId, foreground, silent, images = [], contextOnly = false) {
+  async function send(text, requestId, foreground, silent, images = [], contextOnly = false, imageRelay = false) {
     if (busy) throw new Error("このClaudeタブで送信処理中です。");
     if (typeof text !== "string" || !text.trim() || text.length > 20000) throw new Error("入力が空か、20,000文字を超えています。");
     const receipt = `Roundtable receipt: ${crypto.randomUUID()} (tracking only; do not repeat)`;
     text += `\n\n${receipt}`;
     busy = true;
-    job = { requestId, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
+    job = { requestId, imageRelay, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
     let clicked = false;
     let watching = false;
     try {
@@ -329,12 +343,12 @@
       if (job?.requestId === message.requestId) refreshWatch?.();
       const {images: cachedImages, ...state} = job || {};
       sendResponse(job?.requestId === message.requestId
-        ? { ok: true, ...state }
+        ? { ok: true, ...state, ...(job.imageRelay ? {text:'',richText:null} : {}) }
         : { ok: false, error: '回答の取得状態が見つかりません。Claudeを再読み込みした場合は取得が中断されます。' });
       return;
     }
     if (message?.type !== "ROUNDTABLE_CLAUDE_SEND") return;
-    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
+    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
     return true;
   });
 })();

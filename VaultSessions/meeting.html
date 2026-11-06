@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VaultSessions</title>
   <link rel="icon" type="image/png" href="icons/leaf-32.png">
-  <link rel="stylesheet" href="meeting.css?v=0.1.0">
+  <link rel="stylesheet" href="meeting.css?v=0.1.1">
   <script src="web-bridge.js" defer></script>
   <script src="i18n/runtime.js" defer></script>
   <script src="i18n/en.js" defer></script>
@@ -21,33 +21,36 @@
   <script src="i18n/pt-BR.js" defer></script>
   <script src="i18n/hi.js" defer></script>
   <script src="linkify.js" defer></script>
+  <script src="rich-text.js" defer></script>
   <script src="image-utils.js" defer></script>
   <script src="generated-images.js" defer></script>
   <script src="image-jobs.js" defer></script>
+  <script src="image-relays.js" defer></script>
   <script src="recipient-routing.js" defer></script>
-  <script src="auto-invitations.js?v=0.1.0" defer></script>
+  <script src="auto-invitations.js?v=0.1.1" defer></script>
   <script src="app-manual.js" defer></script>
-  <script src="discussion-controller.js?v=0.1.0" defer></script>
+  <script src="discussion-controller.js?v=0.1.1" defer></script>
   <script src="inspector-context.js" defer></script>
   <script src="document-records.js" defer></script>
-  <script src="meeting.js?v=0.1.0-discussion" defer></script>
+  <script src="meeting.js?v=0.1.1-discussion" defer></script>
   <script src="composer-size.js" defer></script>
   <script src="inspector.js" defer></script>
+  <script src="meeting-image-relays.js" defer></script>
   <script src="meeting-image-jobs.js" defer></script>
-  <script src="meeting-view.js?v=0.1.0" defer></script>
+  <script src="meeting-view.js?v=0.1.1" defer></script>
   <script src="handoff.js" defer></script>
   <script src="meeting-handoff.js" defer></script>
   <script src="summary.js" defer></script>
   <script src="meeting-summary.js" defer></script>
   <script src="log-font-size.js" defer></script>
-  <script src="meeting-shell.js?v=0.1.0" defer></script>
+  <script src="meeting-shell.js?v=0.1.1" defer></script>
   <script src="panel-toggle.js" defer></script>
   <script src="dev-mode.js" defer></script>
   
 </head>
 <body>
   <header class="app-header">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 7C11 4 5 13 9 22c7 5 15-2 15-15Z" fill="white"/><path d="M11 25c0-9 5-13 11-16" fill="none" stroke="#22654c" stroke-width="2"/></svg></span><div><h1>VaultSessions <span class="version">v0.1.0</span></h1><a class="creator mobile-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a></div></div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 7C11 4 5 13 9 22c7 5 15-2 15-15Z" fill="white"/><path d="M11 25c0-9 5-13 11-16" fill="none" stroke="#22654c" stroke-width="2"/></svg></span><div><h1>VaultSessions <span class="version">v0.1.1</span></h1><a class="creator mobile-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a></div></div>
     <p class="tagline" data-i18n="tagline">A text-based meeting app for ChatGPT, Gemini and Claude</p>
     <button id="toggle-participants-panel" class="quiet-button" type="button" aria-controls="participants-panel" aria-expanded="true" data-i18n-aria="hideParticipantsPanel" data-i18n-title="hideParticipantsPanel"><span aria-hidden="true">☰</span></button>
     <nav class="header-actions" aria-label="Meeting controls" data-i18n-aria="meetingControls"><a class="creator desktop-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a><button id="switch-view" type="button">Open side panel</button></nav>

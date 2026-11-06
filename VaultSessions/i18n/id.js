@@ -326,6 +326,8 @@ VaultI18n.register("id", {
     "inspectionWait": "Tunggu percakapan, koneksi atau pembuatan gambar selesai.",
     "inspectionContext": "Menyiapkan konteks Inspector",
     "inspectionReading": "Memeriksa tab AI yang dipilih…",
-    "inspectionInvalid": "Laporan tidak valid. Muat ulang ekstensi dan tab AI."
+    "inspectionInvalid": "Laporan tidak valid. Muat ulang ekstensi dan tab AI.",
+    "imageRelayBusy": "Membagikan gambar",
+    "imageRelayFailed": "Berbagi gambar tidak dapat diselesaikan. Periksa chat resmi."
   }
 });

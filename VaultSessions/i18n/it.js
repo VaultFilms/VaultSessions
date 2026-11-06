@@ -342,6 +342,8 @@ VaultI18n.register("it", {
     "inspectionWait": "Attendi la fine della conversazione, connessione o generazione immagini.",
     "inspectionContext": "Preparazione del contesto Inspector",
     "inspectionReading": "Ispezione della scheda selezionata…",
-    "inspectionInvalid": "Rapporto non valido. Ricarica l’estensione e le schede IA."
+    "inspectionInvalid": "Rapporto non valido. Ricarica l’estensione e le schede IA.",
+    "imageRelayBusy": "Condivisione immagine",
+    "imageRelayFailed": "Impossibile completare la condivisione dell’immagine. Controlla la chat ufficiale."
   }
 });

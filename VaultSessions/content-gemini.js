@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.1';
+  const VERSION = '0.9.3';
   // DOM verified on the signed-in Gemini website on 2026-10-29.
   const EDITORS = ['.ql-editor[contenteditable="true"][role="textbox"]'];
   const SEND = "button.send-button, button[aria-label=\"プロンプトを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -80,6 +80,7 @@
     let userKey = messageKey(userMessage);
     const expectedIndex = previousUserTexts.length;
     let missingSince = null;
+    let relayReadySince=null;
     let imageReadySince = null, imageSignature = '';
     const homePath = value => /^\/(?:u\/\d+\/)?app\/?$/.test(value) || value === '/';
     const savedPath = value => /^\/(?:u\/\d+\/)?app\/[^/]+\/?$/.test(value);
@@ -140,15 +141,30 @@
           return;
         }
       }
+      if(job.imageRelay) {
+        const model=reply?.closest('model-response');
+        const copy=model?.querySelector(COPY);
+        const settled=reply?.getAttribute('aria-busy')==='false' && visible(copy) && !copy.disabled && savedPath(path);
+        if(settled && !generating()) {
+          relayReadySince ??= Date.now();
+          if(Date.now()-relayReadySince>=1500){endJob('complete');return;}
+        }else relayReadySince=null;
+        if(Date.now()-started>20*60*1000)endJob('error','Image sharing response timed out. Check the official chat.');
+        return;
+      }
       if (reply) {
         const text = bodyText(reply);
-        if (text !== job.text) { job.text = text; lastChange = Date.now(); }
+        if (text !== job.text) {
+          job.text = text; lastChange = Date.now();
+          if(!silent)job.richText=globalThis.RoundtableRichText?.captureReply(reply,'gemini')||null;
+        }
         if (text) job.phase = 'streaming';
         const model = reply.closest('model-response');
         const copy = model?.querySelector(COPY);
         const completed = reply.getAttribute('aria-busy') === 'false' && visible(copy) && !copy.disabled;
         // Require this response to expose a copy action and clear its busy state; stable text alone is insufficient.
         if ((text || silent) && completed && !generating() && Date.now() - lastChange >= 1200) {
+          if(!silent)job.richText=globalThis.RoundtableRichText?.captureReply(reply,'gemini')||null;
           endJob('complete'); return;
         }
       }
@@ -169,13 +185,13 @@
     tick();
   }
 
-  async function send(text, requestId, foreground, silent, images = [], contextOnly = false) {
+  async function send(text, requestId, foreground, silent, images = [], contextOnly = false, imageRelay = false) {
     if (busy) throw new Error("このGeminiタブで送信処理中です。");
     if (typeof text !== "string" || !text.trim() || text.length > 20000) throw new Error("入力が空か、20,000文字を超えています。");
-    const receipt = silent && !contextOnly ? null : `VSREQUEST${crypto.randomUUID().replace(/-/g, '')}END`;
+    const receipt = silent && !contextOnly && !imageRelay ? null : `VSREQUEST${crypto.randomUUID().replace(/-/g, '')}END`;
     if (receipt) text = `${receipt}\nThis is a delivery identifier, not discussion content. Do not repeat it.\n\n${text}`;
     busy = true;
-    job = { requestId, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
+    job = { requestId, imageRelay, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
     let clicked = false;
     let watching = false;
     try {
@@ -283,12 +299,12 @@
       if (job?.requestId === message.requestId) refreshWatch?.();
       const {images: cachedImages, ...state} = job || {};
       sendResponse(job?.requestId === message.requestId
-        ? { ok: true, ...state }
+        ? { ok: true, ...state, ...(job.imageRelay ? {text:'',richText:null} : {}) }
         : { ok: false, error: '回答の取得状態が見つかりません。Geminiを再読み込みした場合は取得が中断されます。' });
       return;
     }
     if (message?.type !== "ROUNDTABLE_GEMINI_SEND") return;
-    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
+    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
     return true;
   });
 })();

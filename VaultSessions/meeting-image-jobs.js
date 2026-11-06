@@ -39,6 +39,7 @@
         }
       }else if(event.type==='complete'){
         render(row,event.task,'complete',event.images);
+        imageRelays?.enqueue(event.task,event.images,targets);
         if(targets[event.task.provider]?.tabId===event.task.tabId){
           providerStatus(event.task.provider,'success',VaultI18n.t('imageJobComplete'));
         }
@@ -51,7 +52,7 @@
   });
   window.addEventListener('roundtable-image-job',event=>{
     const {task,row,images}=event.detail;rows.set(task.requestId,row);
-    if(images?.length){render(row,task,'complete',images);renderParticipants();}
+    if(images?.length){render(row,task,'complete',images);imageRelays?.enqueue(task,images,targets);renderParticipants();}
     else imageJobs.add(task);
   });
   globalThis.restoreImageJobRow=(row,task,images)=>{

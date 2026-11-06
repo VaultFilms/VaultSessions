@@ -342,6 +342,8 @@ VaultI18n.register("pt-BR", {
     "inspectionWait": "Aguarde o fim da conversa, conexão ou geração de imagens.",
     "inspectionContext": "Preparando o contexto do Inspector",
     "inspectionReading": "Inspecionando a aba selecionada…",
-    "inspectionInvalid": "Relatório inválido. Recarregue a extensão e as abas de IA."
+    "inspectionInvalid": "Relatório inválido. Recarregue a extensão e as abas de IA.",
+    "imageRelayBusy": "Compartilhando imagem",
+    "imageRelayFailed": "Não foi possível concluir o compartilhamento da imagem. Confira o chat oficial."
   }
 });

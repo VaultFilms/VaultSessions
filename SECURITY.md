@@ -18,14 +18,14 @@ VaultSessions is experimental software that controls signed-in AI website tabs. 
 | HTTP and HTTPS host access | Official chat DOM interaction and optional readable-page capture. The current manifest grants access beyond the three AI domains. |
 | File URL host access | Registered local `meeting.html` bridge. Chrome's separate file-URL permission must be enabled by the user. The bridge checks the registered page URL. |
 | `storage` | Temporary meeting snapshots and local preferences/role records. |
-| `sidePanel` | Tab-specific meeting sidebar and view switching. |
-| `scripting` | Injects the local `content-page.js` reader into a reference tab when its content script is not yet available. |
+| `sidePanel` | Tab-specific meeting side panel and view switching. |
+| `scripting` | Injects the local page reader when needed and reads the official Claude SVG preview frame for a verified image task. |
 
 The manifest does not request cookies, browser history, debugger, or web-request interception permissions. The application does not copy login sessions. Broad DOM access is still sensitive and must not be equated with minimal permissions. Future permission narrowing requires compatibility testing; it has not been claimed here. Turning page sharing off does not revoke the declared permissions.
 
 ## Local data
 
-Meeting snapshots use `chrome.storage.session`. Local settings and the registered file URL use browser-local storage. Conversations already submitted remain on the official provider site. Do not publish browser screenshots, copied conversations, local environment files, or account details as debugging attachments.
+Meeting snapshots use `chrome.storage.session`. Local settings and the registered file URL use browser-local storage. Verified completed role revisions also persist in extension-local storage, keyed by provider and conversation URL (up to 500 records); role text and pending operations are not stored in that persistent record. Generated-image previews and pending image-task metadata can be included in temporary meeting snapshots. Previews are compressed locally from images already loaded by the official ChatGPT or Gemini page; VS does not fetch arbitrary image URLs. Claude SVG code and SVG file previews are sanitized with an element/attribute allowlist and rasterized locally; scripts, embedded HTML, stylesheets, and external references are not passed to the meeting UI. File previews are read only from the official `https://www.claudeusercontent.com` SVG viewer for the current matching task. Original images remain on the official site. Conversations already submitted remain on the official provider site. Do not publish browser screenshots, copied conversations, local environment files, or account details as debugging attachments.
 
 ## Reporting a vulnerability
 
@@ -52,3 +52,9 @@ Get-FileHash .\VaultSessions.zip -Algorithm SHA256
 ## Before making network/privacy claims
 
 Observe the extension service worker, meeting page, and official AI tabs separately. Exercise text, images, page sharing, summaries, file mode, and optional localhost mode. Distinguish extension-origin requests from provider-site traffic. Record the software version and tested flows, and publish only redacted evidence. Describe only the scope actually observed; a static search alone does not establish the absence of external traffic.
+
+### Rich response rendering
+
+Official response DOM is untrusted. VaultSessions captures an allowlisted semantic tree rather than transferring raw HTML. The tree is validated again at extension-message and snapshot boundaries, and the meeting view constructs fresh HTML elements and text nodes with local classes. Source classes, IDs, styles, event attributes, SVG/MathML, scripts, forms, embedded documents, media, and remote images are not imported. MathML formulas fall back to inert text. Links accept only HTTP/HTTPS URLs and open with `noopener noreferrer`. Ordered-list numbering and bounded table cell spans are the only additional source attributes preserved. Depth, node count, text length, and serialized size are bounded; unsupported or oversized content falls back to plain text.
+
+The renderer does not pass response data to `innerHTML`, `DOMParser`, or other HTML parsing sinks. This follows the safe DOM construction approach described in the [OWASP DOM-based XSS Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html). Rich presentation data is kept separate from the plain-text discussion transcript and is not collected for image-sharing replies.

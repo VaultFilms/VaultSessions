@@ -10,11 +10,15 @@
     let imageTask;try{imageTask=JSON.parse(row.dataset.imageTask);}catch{return {};}
     return {imageTask,generatedImages:[...row.querySelectorAll('.generated-image-gallery img')].map((img,index)=>({dataUrl:img.src,width:img.width,height:img.height,name:`generated-image-${index+1}.${img.src.startsWith('data:image/webp;')?'webp':'png'}`}))};
   }
+  function responseState(row){
+    if(!row.classList.contains('assistant')||['image-generation','inspection','handoff'].includes(row.dataset.type))return {};
+    return globalThis.RoundtableRichText?.read(row.querySelector('.entry-body'))||{};
+  }
   function snapshot(){const saved={version:1,rows:[...log.querySelectorAll('.entry')].slice(-500).map(row=>({
     ...imageState(row),recordId:row.dataset.recordId,type:row.dataset.type,role:row.classList.contains('assistant')?'assistant':row.classList.contains('user')?'user':'system',
     provider:Object.keys(providers).find(id=>providers[id].name===row.querySelector('strong')?.textContent),
-    text:row.dataset.type==='image-generation'?'':row.dataset.type==='inspection'?(row.querySelector('.dev-record-result')?.textContent||'Inspector'):bodyText(row.querySelector('.entry-body')),meta:row.querySelector('.entry-state')?.textContent||'',timestamp:Number(row.dataset.time)||null
-  })),documents:globalThis.VaultDocuments?.export()||[],history:controller.history.slice(-500),serial:controller.serial,draft:input.value,settings:{mode:document.querySelector('#meeting-mode').value==='dev'?'dev':'chat',language:language.value,maxSpeeches:document.querySelector('#max-speeches').value,maxQueries:document.querySelector('#max-queries').value}};
+    text:row.dataset.type==='image-generation'?'':row.dataset.type==='inspection'?(row.querySelector('.dev-record-result')?.textContent||'Inspector'):bodyText(row.querySelector('.entry-body')),meta:row.querySelector('.entry-state')?.textContent||'',timestamp:Number(row.dataset.time)||null,...responseState(row)
+  })),imageRelays:imageRelays?.export(),documents:globalThis.VaultDocuments?.export()||[],history:controller.history.slice(-500),serial:controller.serial,draft:input.value,settings:{mode:document.querySelector('#meeting-mode').value==='dev'?'dev':'chat',language:language.value,maxSpeeches:document.querySelector('#max-speeches').value,maxQueries:document.querySelector('#max-queries').value}};
     // Keep recent previews within the existing snapshot budget; original links remain for older images.
     let imageBudget=1600000;
     for(const row of [...saved.rows].reverse())if(row.generatedImages){
@@ -25,11 +29,12 @@
   function restore(saved){
     if(!saved||!Array.isArray(saved.rows)||!Array.isArray(saved.history))return;
     globalThis.VaultDocuments?.restore(saved.documents);
+    if(saved.imageRelays)imageRelays?.restore(saved.imageRelays);
     for(const row of saved.rows){
       if(!['user','assistant','system'].includes(row.role)||typeof row.text!=='string'||(row.role==='assistant'&&!providers[row.provider]))continue;
       const entry=addEntry(row.role,row.text,row.provider);
       if(row.timestamp){entry.entry.dataset.time=String(row.timestamp);const time=entry.entry.querySelector('time');time.dateTime=new Date(row.timestamp).toISOString();time.textContent=new Intl.DateTimeFormat(VaultI18n.locale,{hour:'numeric',minute:'2-digit'}).format(row.timestamp);}else entry.entry.querySelector('time')?.remove();
-      if(row.role==='assistant')RoundtableLinks.render(entry.body,row.text);
+      if(row.role==='assistant')renderResponse(entry.body,row.text,row.richText);
       if(row.type==='image-generation'&&row.imageTask)restoreImageJobRow(entry,row.imageTask,row.generatedImages);
       if(['inspection','handoff'].includes(row.type)&&row.recordId)globalThis.VaultDocuments?.restoreRow(entry,row.recordId);
       if(row.type==='summary'){entry.entry.dataset.type='summary';if(row.recordId)entry.entry.dataset.recordId=row.recordId;setTimeout(()=>window.dispatchEvent(new CustomEvent('roundtable-summary-restore',{detail:entry})),0);}
@@ -50,7 +55,7 @@
   async function save(){
     if(!meetingActive||meetingRestoring||closing||!globalThis.chrome?.runtime?.id)return;
     const current=snapshot();
-    saving=saving.catch(()=>{}).then(()=>request({type:'ROUNDTABLE_SESSION',operation:'save',snapshot:current,busy:(controller.running || summaryBusy)||isConnecting()}));
+    saving=saving.catch(()=>{}).then(()=>request({type:'ROUNDTABLE_SESSION',operation:'save',snapshot:current,busy:(controller.running || summaryBusy)||isConnecting()||!!imageRelays?.busy}));
     try{await saving;}catch(error){if(!closing){if(error.code==='SESSION_MOVED'){meetingActive=false;syncControls();}setStatus('error',error.message,{inLog:false});}}
   }
   async function initialize(){
@@ -76,7 +81,7 @@
     window.postMessage({channel:'roundtable-unified-web',id:event.detail.id,message:{type:'ROUNDTABLE_WEB_PARK_RESULT',active,snapshot:saved}},'*');
   });
   switchButton.addEventListener('click',async()=>{
-    if((controller.running || summaryBusy)||isConnecting()||imageLoading||viewSwitching)return;
+    if((controller.running || summaryBusy)||imageRelays?.busy||isConnecting()||imageLoading||viewSwitching)return;
     viewSwitching=true;syncControls();
     try{await ensureMeetingAccess();}catch(error){viewSwitching=false;syncControls();setStatus('error',error.message,{inLog:false});return;}
     setStatus('sending',VaultI18n.t('switchingView'),{inLog:false});
@@ -102,15 +107,16 @@
     if(meetingRestoring||closing||!globalThis.chrome?.runtime?.id)return;
     try{const result=await request({type:'ROUNDTABLE_SESSION',operation:'load'});if(result.active===false){meetingActive=false;automaticInvitations?.dispose();syncControls();}}catch{}
   });
-  const heartbeat=setInterval(()=>{if(meetingActive&&!meetingRestoring&&!closing)request({type:'ROUNDTABLE_SESSION',operation:'touch',busy:(controller.running || summaryBusy)||isConnecting()}).catch(()=>{});},10000);
+  const heartbeat=setInterval(()=>{if(meetingActive&&!meetingRestoring&&!closing)request({type:'ROUNDTABLE_SESSION',operation:'touch',busy:(controller.running || summaryBusy)||isConnecting()||!!imageRelays?.busy}).catch(()=>{});},10000);
   window.addEventListener('pagehide',()=>clearInterval(heartbeat));
   window.addEventListener('pagehide',()=>{if(meetingActive&&!meetingRestoring&&!closing){void save().then(()=>request({type:'ROUNDTABLE_SESSION',operation:'release'})).catch(()=>{});}});
   globalThis.chrome?.runtime?.onMessage?.addListener(message=>{if(message?.type==='ROUNDTABLE_VIEW_RESUME'&&isSidePanel)location.reload();});
   window.addEventListener('roundtable-summary-state',()=>void save());
+  window.addEventListener('roundtable-image-relays-changed',()=>void save());
   window.addEventListener('vaultsessions-documents-changed',()=>void save());
   window.addEventListener('roundtable-before-localhost',async event=>{
     try{
-      if(controller.running||summaryBusy||isConnecting()||imageLoading)throw Error(VaultI18n.t('localhostWait'));
+      if(controller.running||summaryBusy||imageRelays?.busy||isConnecting()||imageLoading)throw Error(VaultI18n.t('localhostWait'));
       await ensureMeetingAccess();await saving.catch(()=>{});
       await request({type:'ROUNDTABLE_SESSION',operation:'save',snapshot:snapshot(),busy:false});
       event.detail.resolve();

@@ -33,13 +33,13 @@
    await ensureMeetingAccess();
    const available=Object.keys(providers).filter(id=>providerAvailable(id)&&!connecting.has(id)&&!pendingDepartures.has(id));
    if(!available.length)throw Error(t('summaryNoAI'));
-   const rows=[...log.querySelectorAll('.entry')].map(entry=>({type:entry.dataset.type,failed:entry.classList.contains('failed')||entry.classList.contains('pending'),role:entry.classList.contains('user')?'user':entry.classList.contains('assistant')?'assistant':'system',speaker:entry.querySelector('strong')?.textContent,text:entry.querySelector('.entry-body')?.textContent||''}));
+   const rows=[...log.querySelectorAll('.entry')].map(entry=>({type:entry.dataset.type,failed:entry.classList.contains('failed')||entry.classList.contains('pending'),role:entry.classList.contains('user')?'user':entry.classList.contains('assistant')?'assistant':'system',speaker:entry.querySelector('strong')?.textContent,text:responseText(entry.querySelector('.entry-body'))}));
    const documents=VaultDocuments.export(),meetingLanguage=language.value;
    const discovery=RoundtableHandoff.topicsPrompt(rows,documents,meetingLanguage);
    const id=available[Math.floor(Math.random()*available.length)];
    list.replaceChildren();notice.textContent=providers[id].name+' · '+t('handoffFindingTopics');selecting=false;close.disabled=true;dialog.showModal();
    // Discovery is a separate request, never a meeting turn or a saved handoff.
-   const result=await exchange(id,discovery,{silent:true});
+   const result=await exchange(id,discovery,{silent:true,requireReply:true});
    const topics=RoundtableHandoff.parseTopics(result.text);
    const target={...targets[id]};
    const selected=await choose(topics);
@@ -48,7 +48,7 @@
    if(!providerAvailable(id)||targets[id]?.tabId!==target.tabId||targets[id]?.conversationUrl!==target.conversationUrl)throw Error(t('handoffAIChanged'));
    const prompt=RoundtableHandoff.prompt(rows,documents,meetingLanguage,selected);
    row=addEntry('assistant',t('handoffCreating'),id);row.entry.dataset.type='handoff';row.meta.textContent=t('handoffLabel');
-   const generated=await exchange(id,prompt,{silent:true});
+   const generated=await exchange(id,prompt,{silent:true,requireReply:true});
    if(!generated.text?.trim())throw Error(t('summaryEmpty'));
    const record=VaultDocuments.addHandoff(generated.text,providers[id].name);
    VaultDocuments.restoreRow(row,record.id);scrollToLatest();
