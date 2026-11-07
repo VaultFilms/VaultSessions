@@ -6,7 +6,7 @@ VaultSessions is experimental software that controls signed-in AI website tabs. 
 
 - The meeting interface, extension service worker, and content scripts exchange data inside the browser.
 - Messages, role instructions, requested summaries, and selected images are submitted through official ChatGPT, Gemini, or Claude pages. Those pages communicate with their providers, under their own policies.
-- When page sharing is enabled, readable page text may be included in the next AI request. Signed-in dashboards can contain private data. Query strings, fragments, and credentials are stripped from reference URLs, but page text is not automatically redacted.
+- Clicking the page attachment button captures readable text locally. Sending the next message includes that text in requests to the AIs responding to the topic. Signed-in dashboards can contain private data. Query strings, fragments, and credentials are stripped from reference URLs, but page text is not automatically redacted.
 - The optional Python server binds to `127.0.0.1:8766` and serves the `VaultSessions/` directory. Do not keep secrets in that directory. It is not an authentication or storage service.
 - The source has one explicit `fetch`, for checking the fixed localhost meeting URL. Source inspection identified no separate analytics client, remote script/CDN dependency, or direct AI API client. This does not cover network behavior of the official AI websites, browser, other extensions, or future changes. A runtime network capture has not been performed for this release preparation.
 - Public creator links and links inside AI replies open external sites when clicked.
@@ -21,7 +21,7 @@ VaultSessions is experimental software that controls signed-in AI website tabs. 
 | `sidePanel` | Tab-specific meeting side panel and view switching. |
 | `scripting` | Injects the local page reader when needed and reads the official Claude SVG preview frame for a verified image task. |
 
-The manifest does not request cookies, browser history, debugger, or web-request interception permissions. The application does not copy login sessions. Broad DOM access is still sensitive and must not be equated with minimal permissions. Future permission narrowing requires compatibility testing; it has not been claimed here. Turning page sharing off does not revoke the declared permissions.
+The manifest does not request cookies, browser history, debugger, or web-request interception permissions. The application does not copy login sessions. Broad DOM access is still sensitive and must not be equated with minimal permissions. Future permission narrowing requires compatibility testing; it has not been claimed here. 
 
 ## Local data
 

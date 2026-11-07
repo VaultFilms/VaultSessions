@@ -128,3 +128,10 @@ body.side-panel #meeting-setup>summary #ui-language{width:auto;padding:0;font-si
 .rich-response mark{background:#f1dc8a66;color:inherit}.rich-response :where(sup,sub){font-size:.75em;line-height:0}
 :root[data-theme="dark"] .rich-response :where(code,kbd,samp,pre,th){background:#ffffff0b}
 :root[data-theme="dark"] .rich-response pre :where(code,span){background:none}
+
+
+#page-attach-controls { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+#page-attach-controls button, #remove-page { font-size: 12px; padding: 5px 8px; }
+#page-attachment { display: flex; flex: 0 0 100%; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+#page-attachment-title { min-width: 0; overflow-wrap: anywhere; }
+#remove-page { flex-shrink: 0; }

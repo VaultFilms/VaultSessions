@@ -30,7 +30,7 @@
 - **Choose a first speaker naturally.** Use `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, or `To Gemini`. Otherwise, the first speaker is selected randomly.
 - **Share visual context.** Attach or paste up to four images and discuss them by number.
 - **Keep talking while ChatGPT or Gemini generates images.** When native image generation is detected, the generating AI becomes temporarily unavailable and you can talk to the other connected AIs. Completed previews appear beside the original request, without starting another discussion round. VS provides compressed previews; use the official chat for originals. Completed images are automatically shared with the other AIs connected at completion time. Each recipient receives images in order when its official chat is idle. Sharing replies stay out of the meeting log and discussion history. Generation or retrieval failures and timeouts are shown in the log; the AI returns automatically once its official chat is ready. Keep the official tab open; background progress depends on the provider and browser. Claude SVG code and SVG file previews are also supported; VS sanitizes and converts them into raster previews, without running SVG scripts or loading external resources.
-- **Share the current page.** Optionally provide readable page text as meeting reference material.
+- **Share the current page.** In the side panel, open **+** and select **Attach this page to the next message** below the image uploader. VaultSessions captures the readable text currently on the page and includes it when you send that message. In meeting settings, set the page text limit from 1,000 to 50,000 characters. The default is 25,000. The capture limit is 120% of this setting, and the full discussion request limit is the setting plus 25,000 characters, including the transcript and instructions.
 - **Readable AI responses.** Preserve headings, lists, tables, emphasis, quotes, and code blocks from official replies with VaultSessions styling. Only allowlisted semantic elements and validated links are rebuilt; provider classes, styles, scripts, and embedded content are discarded. Formatting survives view changes while discussion history remains plain text.
 - **Summarize and copy.** Generate a summary for your own review or a future meeting.
 - **Side panel and fullscreen views.** Switch layouts, hide participant controls, and adjust log text size.
@@ -117,7 +117,7 @@ VaultSessions passes images to the official AI tab inside the browser, without a
 
 The header menu hides participant/settings controls. **A−**, **A＋**, and **Reset size** adjust log bodies, including summaries, from 75% to 175%. Text-size settings are shared between layouts and persist across browser restarts.
 
-Temporary snapshots use `chrome.storage.session`, with up to 500 displayed rows and 500 ordinary history entries per saved snapshot. The active view may contain more. This is not a durable archive. Language, text size, page-sharing preference, and the registered file URL use local browser storage. Unsent image selections are not preserved through view switches.
+Temporary snapshots use `chrome.storage.session`, with up to 500 displayed rows and 500 ordinary history entries per saved snapshot. The active view may contain more. This is not a durable archive. Language, text size, and the registered file URL use local browser storage. Unsent attachments are not preserved through view switches.
 
 ### Privacy, permissions, and compatibility
 
@@ -125,7 +125,7 @@ Temporary snapshots use `chrome.storage.session`, with up to 500 displayed rows 
 
 Static source inspection found one explicit `fetch`: the optional check of `http://127.0.0.1:8766/meeting.html`. No separate analytics client, remote script/CDN loader, or direct external AI API client was identified. This is a source-level finding, **not a recorded network-traffic audit** and not a claim that there is no external communication.
 
-Page sharing can include private information visible on signed-in pages. Turn it off on pages you do not want to share. Removing URL query strings does not remove private data from page text. See [SECURITY.md](SECURITY.md) for the permission/data-flow details and security reporting guidance.
+Page sharing can include private information visible on signed-in pages. Attach a page only when you intend to share its readable text. Removing URL query strings does not remove private data from page text. See [SECURITY.md](SECURITY.md) for the permission/data-flow details and security reporting guidance.
 
 **VaultSessions automates signed-in official AI websites. This may conflict with a provider's terms or account rules. Review the applicable terms and use it at your own risk. Provider UI, browser API, feature, or terms changes may break functionality or require use to stop.** The app does not bypass CAPTCHA or rate limits. Being open source does not mean the software has been independently audited or is safe by default.
 

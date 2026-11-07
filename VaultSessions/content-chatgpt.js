@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.4';
+  const VERSION = '0.9.6';
   // ProseMirror and the Japanese send label were verified in normal Chat UI on 2026-10-29.
   // English labels, #prompt-textarea, and data-testid are compatibility candidates not verified in that session.
   // Message bodies, IDs, and turn states were verified in the current UI; retain legacy fallbacks.
@@ -244,9 +244,10 @@
 
   async function send(text, requestId, silent, images = [], contextOnly = false, imageRelay = false) {
     if (busy) throw new Error("このChatGPTタブで送信処理中です。");
-    if (typeof text !== "string" || !text.trim() || text.length > 20000) throw new Error("入力が空か、20,000文字を超えています。");
+    if (typeof text !== "string" || !text.trim() || text.length > 75000) throw Error("The outgoing message is empty or exceeds 75,000 characters.");
     // Keep role recovery compatible; add a one-time receipt only to normal messages.
     if(!silent||contextOnly||imageRelay)text='VSREQUEST'+crypto.randomUUID().replace(/-/g,'')+'END\nDelivery reference only; do not repeat it.\n\n'+text;
+    if (text.length > 75000) throw Error("The outgoing message with its receipt exceeds 75,000 characters.");
     busy = true;
     job = { requestId, imageRelay, phase: 'sending', text: '', url: location.origin + location.pathname, receipt: silent && !imageRelay ? null : text.match(/^VSREQUEST[a-f0-9]{32}END/)?.[0] };
     let clicked = false;

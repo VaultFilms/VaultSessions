@@ -18,7 +18,7 @@
     ...imageState(row),recordId:row.dataset.recordId,type:row.dataset.type,role:row.classList.contains('assistant')?'assistant':row.classList.contains('user')?'user':'system',
     provider:Object.keys(providers).find(id=>providers[id].name===row.querySelector('strong')?.textContent),
     text:row.dataset.type==='image-generation'?'':row.dataset.type==='inspection'?(row.querySelector('.dev-record-result')?.textContent||'Inspector'):bodyText(row.querySelector('.entry-body')),meta:row.querySelector('.entry-state')?.textContent||'',timestamp:Number(row.dataset.time)||null,...responseState(row)
-  })),imageRelays:imageRelays?.export(),documents:globalThis.VaultDocuments?.export()||[],history:controller.history.slice(-500),serial:controller.serial,draft:input.value,settings:{mode:document.querySelector('#meeting-mode').value==='dev'?'dev':'chat',language:language.value,maxSpeeches:document.querySelector('#max-speeches').value,maxQueries:document.querySelector('#max-queries').value}};
+  })),imageRelays:imageRelays?.export(),documents:globalThis.VaultDocuments?.export()||[],history:controller.history.slice(-500),serial:controller.serial,draft:input.value,settings:{mode:document.querySelector('#meeting-mode').value==='dev'?'dev':'chat',language:language.value,maxSpeeches:document.querySelector('#max-speeches').value,maxQueries:document.querySelector('#max-queries').value,pageChars:currentPageLimits().pageChars}};
     // Keep recent previews within the existing snapshot budget; original links remain for older images.
     let imageBudget=1600000;
     for(const row of [...saved.rows].reverse())if(row.generatedImages){
@@ -48,6 +48,8 @@
     if([...language.options].some(option=>option.value===settings.language)){language.value=settings.language;language.dataset.restored=settings.language;window.dispatchEvent(new CustomEvent('vaultsessions-restore-language',{detail:settings.language}));}
     if(+settings.maxSpeeches>=1&&+settings.maxSpeeches<=100)document.querySelector('#max-speeches').value=settings.maxSpeeches;
     if(+settings.maxQueries>=1&&+settings.maxQueries<=300)document.querySelector('#max-queries').value=settings.maxQueries;
+    pageTextLimit.value=RoundtablePages.limits(settings.pageChars).pageChars;
+    renderPageLimits();
     if(typeof saved.draft==='string'){input.value=saved.draft;globalThis.VaultComposerSize?.resize();}
     requestAnimationFrame(()=>log.scrollTop=log.scrollHeight);
   }
@@ -81,7 +83,7 @@
     window.postMessage({channel:'roundtable-unified-web',id:event.detail.id,message:{type:'ROUNDTABLE_WEB_PARK_RESULT',active,snapshot:saved}},'*');
   });
   switchButton.addEventListener('click',async()=>{
-    if((controller.running || summaryBusy)||imageRelays?.busy||isConnecting()||imageLoading||viewSwitching)return;
+    if((controller.running || summaryBusy)||imageRelays?.busy||isConnecting()||imageLoading||pageLoading||viewSwitching)return;
     viewSwitching=true;syncControls();
     try{await ensureMeetingAccess();}catch(error){viewSwitching=false;syncControls();setStatus('error',error.message,{inLog:false});return;}
     setStatus('sending',VaultI18n.t('switchingView'),{inLog:false});
@@ -116,7 +118,7 @@
   window.addEventListener('vaultsessions-documents-changed',()=>void save());
   window.addEventListener('roundtable-before-localhost',async event=>{
     try{
-      if(controller.running||summaryBusy||imageRelays?.busy||isConnecting()||imageLoading)throw Error(VaultI18n.t('localhostWait'));
+      if(controller.running||summaryBusy||imageRelays?.busy||isConnecting()||imageLoading||pageLoading)throw Error(VaultI18n.t('localhostWait'));
       await ensureMeetingAccess();await saving.catch(()=>{});
       await request({type:'ROUNDTABLE_SESSION',operation:'save',snapshot:snapshot(),busy:false});
       event.detail.resolve();

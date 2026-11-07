@@ -71,6 +71,68 @@ const pendingDepartures = new Set();
 const isConnecting = () => connecting.size > 0;
 let composing = false;
 let pageLoading = false;
+let attachedPage = null;
+const pageControls = document.querySelector('#page-attach-controls');
+const pageAttachment = document.querySelector('#page-attachment');
+const pageTitle = document.querySelector('#page-attachment-title');
+const attachPage = document.querySelector('#attach-page');
+const removePage = document.querySelector('#remove-page');
+const pageNote = document.querySelector('#page-attach-note');
+const pageTextLimit = document.querySelector('#page-text-limit');
+const pageTextLimitHint = document.querySelector('#page-text-limit-hint');
+const currentPageLimits = () => RoundtablePages.limits(pageTextLimit.valueAsNumber);
+function renderPageLimits() {
+  const {captureChars, requestChars} = currentPageLimits();
+  const format = new Intl.NumberFormat(VaultI18n.locale);
+  pageTextLimitHint.textContent = VaultI18n.t('pageTextLimitHint', {
+    0:format.format(captureChars), 1:format.format(requestChars)
+  });
+  renderPageAttachment();
+}
+pageTextLimit.addEventListener('input',renderPageLimits);
+pageTextLimit.addEventListener('change', () => {
+  pageTextLimit.value = currentPageLimits().pageChars;
+  renderPageLimits();
+});
+function renderPageAttachment() {
+  pageAttachment.hidden = !attachedPage;
+  pageTitle.textContent = attachedPage
+    ? VaultI18n.t('message_086', {0:attachedPage.title || attachedPage.url,1:attachedPage.truncated || attachedPage.text.length > currentPageLimits().pageChars ? VaultI18n.t('notice_043') : ''})
+    : '';
+}
+function setPageNote(key) {
+  pageNote.dataset.i18n = key;
+  pageNote.textContent = VaultI18n.t(key);
+}
+pageControls.hidden = !isSidePanel;
+attachPage.addEventListener('click', async () => {
+  if (attachPage.disabled) return;
+  pageLoading = true;
+  setPageNote('message_084');
+  syncControls();
+  try {
+    const {pageChars} = currentPageLimits();
+    const ownWindow = await chrome.windows.getCurrent();
+    const result = await request({type:'ROUNDTABLE_CAPTURE_PAGE',windowId:ownWindow.id,pageChars});
+    if (!meetingActive || viewSwitching) return;
+    attachedPage = result.material;
+    renderPageAttachment();
+    document.querySelector('#image-composer').open = false;
+    setPageNote('pageHint');
+  } catch {
+    setPageNote('message_087');
+  } finally {
+    pageLoading = false;
+    syncControls();
+  }
+});
+removePage.addEventListener('click', () => {
+  attachedPage = null;
+  renderPageAttachment();
+  syncControls();
+});
+window.addEventListener('vaultsessions-language',renderPageLimits);
+renderPageLimits();
 const language = document.querySelector('#meeting-language');
 const stopButton = document.querySelector('#stop-discussion');
 const speaker = document.querySelector('#current-speaker');
@@ -133,14 +195,15 @@ function renderParticipants() {
 function syncControls() {
   const running = (controller.running || summaryBusy) || !meetingActive || meetingRestoring;
   reloadExtension.disabled = isConnecting() || (controller.running || summaryBusy) || meetingRestoring;
-  // Reference capture does not block sending; omit unavailable material from this turn.
-  button.disabled = isConnecting() || running || imageLoading || !Object.keys(targets).some(providerAvailable);
+  button.disabled = isConnecting() || running || imageLoading || pageLoading || !Object.keys(targets).some(providerAvailable);
   if (running && document.activeElement === input) input.blur();
   input.disabled = isConnecting() || running || !Object.keys(targets).some(providerAvailable);
   imageInput.disabled = isConnecting() || running || imageLoading;
   imageRemove.disabled = isConnecting() || running || imageLoading;
   for (const remove of imagePreview.querySelectorAll('button')) remove.disabled = isConnecting() || running || imageLoading;
-  input.required = selectedImages.length === 0;
+  attachPage.disabled = !isSidePanel || viewSwitching || running || isConnecting() || pageLoading;
+  removePage.disabled = running || pageLoading;
+  input.required = selectedImages.length === 0 && !attachedPage;
   stopButton.disabled = !controller.running;
   button.textContent = (controller.running || summaryBusy) ? VaultI18n.t('message_010') : !meetingActive ? VaultI18n.t('message_011') : VaultI18n.t('message_012');
   for (const [id, card] of Object.entries(cards)) {
@@ -149,7 +212,7 @@ function syncControls() {
     for (const control of [card.select, card.reload, card.allow, card.roleRetry]) control.disabled = connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring;
   }
   renderAutomaticCards();
-  document.querySelector('#switch-view').disabled = viewSwitching || imageRelays?.busy || (controller.running || summaryBusy) || isConnecting() || imageLoading || meetingRestoring;
+  document.querySelector('#switch-view').disabled = viewSwitching || imageRelays?.busy || (controller.running || summaryBusy) || isConnecting() || imageLoading || pageLoading || meetingRestoring;
 }
 // Image delivery can spend 60 seconds attaching files, plus editor/button/receipt waits.
 // Keep the UI deadline beyond the bridge deadline; ordinary calls still fail promptly.
@@ -448,16 +511,12 @@ function removeAnswer(record) {
 function discussionEvent(event) {
   const record = runRows.get(event.runId);
   switch (event.type) {
-    case 'material': {
-      const row = addEntry('system', VaultI18n.t('message_046', {0:event.material.title || event.material.url,1:event.nextTopic ? VaultI18n.t('notice_042') : ''}));
-      row.entry.classList.add('material'); row.meta.textContent = VaultI18n.t('message_047');
-      break;
-    }
     case 'role':
       providerStatus(event.provider, event.state, event.state === 'sending' ? VaultI18n.t('message_035') : event.state === 'ready' ? VaultI18n.t('message_048') : event.error);
       break;
     case 'queued': {
-      const user = addEntry('user', event.text + (event.imageNames?.length ? '\n📎 ' + event.imageNames.map((name, index) => VaultI18n.t('message_049', {0:index + 1,1:name})).join(', ') : ''));
+      const reference = event.pageTitle ? '\n📎 ' + VaultI18n.t('message_086',{0:event.pageTitle,1:''}) : '';
+      const user = addEntry('user', event.text + reference + (event.imageNames?.length ? '\n📎 ' + event.imageNames.map((name, index) => VaultI18n.t('message_049', {0:index + 1,1:name})).join(', ') : ''));
       user.meta.textContent = event.waiting ? VaultI18n.t('message_050') : VaultI18n.t('message_033');
       runRows.set(event.runId, { user, answer: null, firstReplyShown: false });
       if (event.waiting) setStatus('sending', VaultI18n.t('message_051'));
@@ -566,17 +625,18 @@ function discussionEvent(event) {
 }
 form.addEventListener('submit', event => {
   event.preventDefault();
-  if (!meetingActive || meetingRestoring || isConnecting() || imageLoading || (controller.running || summaryBusy)) return;
+  if (!meetingActive || meetingRestoring || isConnecting() || imageLoading || pageLoading || (controller.running || summaryBusy)) return;
   try {
-    const text = input.value.trim() || (selectedImages.length ? 'Review the attached images and share your observations.' : '');
+    const text = input.value.trim() || (attachedPage ? 'Review the attached page and any attached images. Share your observations.' : selectedImages.length ? 'Review the attached images and share your observations.' : '');
     const mentioned = RoundtableRecipients.mention(text);
     if (mentioned && imageJobs?.isBusy(mentioned)) throw Error(VaultI18n.t('imageJobBusy',{name:providers[mentioned].name}));
     const connected = Object.keys(providers).filter(id => providerAvailable(id) && !connecting.has(id));
     const first = RoundtableRecipients.choose(text, connected);
-    controller.submit({ text, images: selectedImages, first,
+    controller.submit({ text, images: selectedImages, material:attachedPage, pageChars:currentPageLimits().pageChars, first,
       maxSpeeches: Number(document.querySelector('#max-speeches').value),
       maxQueries: Number(document.querySelector('#max-queries').value), language: language.value });
     if (isSidePanel) document.querySelector('#meeting-setup').open = false;
+    attachedPage = null; renderPageAttachment();
     input.value = ''; globalThis.VaultComposerSize?.resize(); input.blur(); clearImage(); syncControls();
   } catch (error) { setStatus('error', error.message); }
 });
@@ -636,55 +696,7 @@ for (const id of Object.keys(providers)) createInvitationCard(id);
 renderParticipants();
 setStatus('ready', VaultI18n.t('message_081'));
 startAutomaticInvitations();
-function connectPageContext() {
-  if (!isSidePanel || !globalThis.chrome?.runtime?.connect) return;
-  const toggle = document.querySelector('#auto-page-context');
-  const note = document.querySelector('#page-material-note');
-  let port = null, closed = false, retry = null, captureTimer = null;
-  const apply = message => {
-    note.hidden = false;
-    if (message.type === 'PAGE_PREF') {
-      toggle.checked = message.enabled; toggle.disabled = false;
-      note.textContent = message.enabled ? VaultI18n.t('message_082') : VaultI18n.t('message_083');
-    } else if (message.type === 'PAGE_PENDING') {
-      pageLoading = true; controller.setMaterial(null);
-      note.textContent = VaultI18n.t('message_084');
-      clearTimeout(captureTimer);
-      captureTimer = setTimeout(() => {
-        pageLoading = false;
-        note.textContent = VaultI18n.t('message_085');
-      }, 20000);
-    } else if (message.type === 'PAGE_MATERIAL') {
-      clearTimeout(captureTimer); pageLoading = false; controller.setMaterial(message.material);
-      note.textContent = VaultI18n.t('message_086', {0:message.material.title || message.material.url,1:(message.material.truncated || message.material.text.length > 5000) ? VaultI18n.t('notice_043') : ''});
-    } else if (['PAGE_DISABLED', 'PAGE_UNAVAILABLE'].includes(message.type)) {
-      clearTimeout(captureTimer); pageLoading = false; controller.setMaterial(null);
-      note.textContent = uiText(message.reason || VaultI18n.t('message_083'));
-    }
-    syncControls();
-  };
-  async function connect() {
-    try {
-      const ownWindow = await chrome.windows.getCurrent();
-      if (closed) return;
-      port = chrome.runtime.connect({ name: 'ROUNDTABLE_PAGE_CONTEXT' });
-      port.onMessage.addListener(message => { try { apply(message); } catch { clearTimeout(captureTimer); pageLoading = false; controller.setMaterial(null); note.textContent = VaultI18n.t('message_087'); syncControls(); } });
-      port.onDisconnect.addListener(() => {
-        clearTimeout(captureTimer); port = null; pageLoading = false; controller.setMaterial(null); toggle.disabled = true; syncControls();
-        if (!closed) retry = setTimeout(connect, 500);
-      });
-      port.postMessage({ type: 'START', windowId: ownWindow.id });
-    } catch {
-      if (!closed) retry = setTimeout(connect, 1500);
-    }
-  }
-  toggle.addEventListener('change', () => {
-    if (port) port.postMessage({ type: 'SET_ENABLED', enabled: toggle.checked });
-  });
-  window.addEventListener('pagehide', () => { closed = true; clearTimeout(retry); clearTimeout(captureTimer); port?.disconnect(); });
-  void connect();
-}
-connectPageContext();
+
 
 
 function clearInvitationIssue(id){
@@ -725,7 +737,7 @@ function startAutomaticInvitations() {
     discover:async()=>{await request({type:'ROUNDTABLE_HELLO'});return (await request({type:'ROUNDTABLE_DISCOVER'})).providers;},
     invite:id=>invite(id), getTarget:id=>targets[id],
     removeTarget:id=>{delete targets[id];renderParticipants();},
-    canConnect:()=>meetingActive&&!meetingRestoring&&!(controller.running || summaryBusy)&&!isConnecting()&&!imageLoading&&(!Object.keys(targets).length||(!composing&&document.activeElement!==input&&!input.value.trim())),
+    canConnect:()=>meetingActive&&!meetingRestoring&&!(controller.running || summaryBusy)&&!isConnecting()&&!imageLoading&&!pageLoading&&(!Object.keys(targets).length||(!composing&&document.activeElement!==input&&!input.value.trim())),
     onState:(id,state)=>{
       if(!id){setStatus('error',state.error);return;}
       const card=cards[id];

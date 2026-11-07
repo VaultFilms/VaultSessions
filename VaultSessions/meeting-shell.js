@@ -41,7 +41,6 @@
  window.addEventListener('vaultsessions-language',syncParticipantsButton);
  syncParticipantsButton();
  if(isSidePanel)setup.open=false;
- else {const sharing=document.querySelector('#auto-page-context');sharing.checked=false;sharing.title=I.t('shareUnavailable');}
  const previousEvent=controller.onEvent;
  controller.onEvent=event=>{
   previousEvent(event);

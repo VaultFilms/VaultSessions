@@ -10,7 +10,7 @@
   function render() {
     const dev = select.value === 'dev';
     document.body.classList.toggle('dev-mode', dev);
-    tools.hidden = false; badge.hidden = !dev;
+    tools.hidden = !dev; badge.hidden = !dev;
     for (const item of tools.querySelectorAll('[data-dev-only]')) item.hidden = !dev;
     heading.dataset.i18n = dev ? 'devMeetingTitle' : 'meetingTitle';
     heading.textContent = VaultI18n.t(heading.dataset.i18n);

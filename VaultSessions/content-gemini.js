@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.3';
+  const VERSION = '0.9.5';
   // DOM verified on the signed-in Gemini website on 2026-10-29.
   const EDITORS = ['.ql-editor[contenteditable="true"][role="textbox"]'];
   const SEND = "button.send-button, button[aria-label=\"プロンプトを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -187,9 +187,10 @@
 
   async function send(text, requestId, foreground, silent, images = [], contextOnly = false, imageRelay = false) {
     if (busy) throw new Error("このGeminiタブで送信処理中です。");
-    if (typeof text !== "string" || !text.trim() || text.length > 20000) throw new Error("入力が空か、20,000文字を超えています。");
+    if (typeof text !== "string" || !text.trim() || text.length > 75000) throw Error("The outgoing message is empty or exceeds 75,000 characters.");
     const receipt = silent && !contextOnly && !imageRelay ? null : `VSREQUEST${crypto.randomUUID().replace(/-/g, '')}END`;
     if (receipt) text = `${receipt}\nThis is a delivery identifier, not discussion content. Do not repeat it.\n\n${text}`;
+    if (text.length > 75000) throw Error("The outgoing message with its receipt exceeds 75,000 characters.");
     busy = true;
     job = { requestId, imageRelay, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
     let clicked = false;

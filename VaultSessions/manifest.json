@@ -70,22 +70,6 @@
     },
     {
       "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "exclude_matches": [
-        "*://*.chatgpt.com/*",
-        "*://chat.openai.com/*",
-        "*://gemini.google.com/*",
-        "*://*.claude.ai/*"
-      ],
-      "js": [
-        "content-page.js"
-      ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
         "file:///*",
         "http://127.0.0.1/*"
       ],
