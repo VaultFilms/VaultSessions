@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VaultSessions",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Discuss with your signed-in ChatGPT, Gemini, and Claude in one shared meeting.",
   "background": {
     "service_worker": "background.js"

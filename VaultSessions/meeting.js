@@ -8,9 +8,9 @@ function renderResponse(element,text,richText){
 function responseText(element){
   return globalThis.RoundtableRichText?.read(element)?.text ?? element?.innerText ?? element?.textContent ?? '';
 }
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 // Accept compatible service workers after UI-only updates.
-const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.1']);
+const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.2']);
 const meetingClientId = crypto.randomUUID();
 let meetingActive = true;
 let summaryBusy = false;

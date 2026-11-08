@@ -18,7 +18,7 @@ const localMeetingSender=sender=>sender.id===chrome.runtime.id&&sender.frameId==
 const webSender = sender => sender.id === chrome.runtime.id && isMeetingURL(sender.url) && sender.frameId === 0 && Number.isInteger(sender.tab?.id);
 
 
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 const BRIDGE_VERSION = '0.5.1';
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const PROVIDERS = {
@@ -218,6 +218,8 @@ function savedRoleURL(providerId, url) {
   return providerId === 'chatgpt' ? /^\/c\/(?!local-chatgpt(?::|%3a))[^/]+\/?$/i.test(path)
     : providerId === 'gemini' ? /^\/app\/[^/]+\/?$/.test(path) : /^\/chat\/[^/]+\/?$/.test(path);
 }
+// Expire abandoned Role reservations so a manual retry can recover.
+const ROLE_SETUP_TIMEOUT_MS = 3 * 60 * 1000;
 let roleWrites = Promise.resolve();
 function roleState(providerId, provider, message, verifiedRecovery = false) {
   const operation = roleWrites.then(async () => {
@@ -241,17 +243,31 @@ function roleState(providerId, provider, message, verifiedRecovery = false) {
       if (cleanURL(tab.url) !== message.conversationUrl || !savedRoleURL(providerId, message.conversationUrl)) throw new Error('Role復旧時の会話が一致しません。');
       data.ready[urlKey] = providerId === 'claude' ? 1 : 2;
       delete data.pending[tabKey];
-    } else if (message.operation === 'reset') {
-      // Explicit recovery: retain completed role records.
-      delete data.pending[tabKey];
-    } else if (message.operation === 'begin') {
-      if (cleanURL(tab.url) !== message.conversationUrl) throw new Error('Role設定前に会話が切り替わりました。招待し直してください。');
-      if (data.ready[urlKey] === message.revision) return { ok: true, state: 'ready' };
-      if (data.pending[tabKey]) throw Object.assign(new Error('Roleの送信が未完了、または結果が不明です。公式タブを確認し、カードのRole再設定を押してください。自動再送はしません。'), { code: 'ROLE_UNCERTAIN' });
-      // Also prevent different meeting pages from sending to the same conversation concurrently.
-      if (Object.values(data.pending).some(record => record.provider === providerId && record.url === message.conversationUrl)) throw new Error('同じ会話のRoleを別の会議ページで設定中です。完了を待ってください。');
+    } else if (message.operation === 'reset' || message.operation === 'begin') {
+      const url = cleanURL(message.conversationUrl);
+      if (cleanURL(tab.url) !== url) throw new Error('Role設定前に会話が切り替わりました。招待し直してください。');
+      if (message.operation === 'begin' && data.ready[urlKey] === message.revision) return { ok: true, state: 'ready' };
+
+      // A new-chat URL belongs to its tab. A saved conversation can be open in several tabs.
+      const savedConversation = savedRoleURL(providerId, url);
+      const conflicts = Object.entries(data.pending).filter(([key, record]) =>
+        key === tabKey || (savedConversation && record.provider === providerId && cleanURL(record.url) === url));
+      const now = Date.now();
+      const isActive = record => record.state === 'pending' && Number.isFinite(record.startedAt)
+        && now < record.startedAt + ROLE_SETUP_TIMEOUT_MS;
+      const otherTabActive = conflicts.some(([key, record]) => key !== tabKey && isActive(record));
+      if (otherTabActive) throw new Error('同じ会話のRoleを別の会議ページで設定中です。完了を待ってください。');
+
+      if (message.operation === 'reset') {
+        if (conflicts.some(([, record]) => isActive(record))) throw new Error('送信処理中です。完了を待ってください。');
+        // Leave completed revisions intact and clear failed or expired reservations for this target.
+        for (const [key] of conflicts) delete data.pending[key];
+        await chrome.storage.session.set({ roundtableRoles: data });
+        return { ok: true, state: 'reset' };
+      }
+      if (conflicts.length) throw Object.assign(new Error('Roleの送信が未完了、または結果が不明です。公式タブを確認し、カードのRole再設定を押してください。自動再送はしません。'), { code: 'ROLE_UNCERTAIN' });
       if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId) || ![1, 2].includes(message.revision)) throw new Error('Role送信IDが不正です。');
-      data.pending[tabKey] = { provider: providerId, requestId: message.requestId, url: message.conversationUrl, revision: message.revision, state: 'pending' };
+      data.pending[tabKey] = { provider: providerId, requestId: message.requestId, url: message.conversationUrl, revision: message.revision, state: 'pending', startedAt: now };
     } else {
       const pending = data.pending[tabKey];
       if (!pending || pending.requestId !== message.requestId) throw new Error('Roleの処理IDが一致しません。');
