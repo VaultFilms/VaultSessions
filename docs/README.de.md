@@ -21,6 +21,14 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/VaultFilms/VaultSessions/releases">
+    <img src="https://img.shields.io/github/v/release/VaultFilms/VaultSessions?color=blue" alt="GitHub Release">
+  </a>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/manifest-v3-orange" alt="Manifest v3">
+</p>
+
 **Eine Open-Source-Besprechungs-App, in der Menschen und ihre persönlichen KI-Assistenten — ChatGPT, Gemini und Claude — mit ihrer bestehenden Personalisierung gemeinsam denken und zusammenarbeiten können.**
 
 ## Funktionen
