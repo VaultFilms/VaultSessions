@@ -22,11 +22,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/VaultFilms/VaultSessions/releases">
-    <img src="https://img.shields.io/github/v/release/VaultFilms/VaultSessions?color=blue" alt="GitHub Release">
+  <a href="https://hits.seeyoufarm.com">
+    <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FVaultFilms%2FVaultSessions&count_bg=%2379589F&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false" alt="Hits">
   </a>
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/manifest-v3-orange" alt="Manifest v3">
 </p>
 
 **An open-source meeting app where humans and their personal AI assistants—ChatGPT, Gemini, and Claude—can think and collaborate together, using their existing personalization.**
