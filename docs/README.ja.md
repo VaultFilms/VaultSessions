@@ -27,6 +27,7 @@
   </a>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/manifest-v3-orange" alt="Manifest v3">
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
 **人間と、それぞれが普段使っているAIアシスタント（ChatGPT・Gemini・Claude）が、既存のパーソナライズを活かして一緒に考え、協働できるオープンソースの会議アプリです。**
