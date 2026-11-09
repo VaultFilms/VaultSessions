@@ -21,6 +21,14 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/VaultFilms/VaultSessions/releases">
+    <img src="https://img.shields.io/github/v/release/VaultFilms/VaultSessions?color=blue" alt="GitHub Release">
+  </a>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/manifest-v3-orange" alt="Manifest v3">
+</p>
+
 **एक ओपन सोर्स बैठक ऐप जहाँ इंसान और उनके निजी AI सहायक — ChatGPT, Gemini और Claude — अपने मौजूदा वैयक्तिकरण का उपयोग करते हुए साथ मिलकर सोच और सहयोग कर सकते हैं।**
 
 ## सुविधाएँ
