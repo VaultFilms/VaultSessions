@@ -27,6 +27,7 @@
   </a>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/manifest-v3-orange" alt="Manifest v3">
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
 **Um aplicativo de reuniões de código aberto em que as pessoas e seus assistentes pessoais de IA — ChatGPT, Gemini e Claude — podem pensar e colaborar juntos, aproveitando a personalização existente.**
