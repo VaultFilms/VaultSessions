@@ -27,6 +27,7 @@
   </a>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/manifest-v3-orange" alt="Manifest v3">
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
 **Eine Open-Source-Besprechungs-App, in der Menschen und ihre persönlichen KI-Assistenten — ChatGPT, Gemini und Claude — mit ihrer bestehenden Personalisierung gemeinsam denken und zusammenarbeiten können.**
