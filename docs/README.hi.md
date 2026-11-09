@@ -27,6 +27,7 @@
   </a>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/manifest-v3-orange" alt="Manifest v3">
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
 **एक ओपन सोर्स बैठक ऐप जहाँ इंसान और उनके निजी AI सहायक — ChatGPT, Gemini और Claude — अपने मौजूदा वैयक्तिकरण का उपयोग करते हुए साथ मिलकर सोच और सहयोग कर सकते हैं।**
