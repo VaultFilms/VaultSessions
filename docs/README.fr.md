@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=SThMHqWE1Go">
+  <a href="https://www.youtube.com/watch?v=UsRg_4V6jCg">
     <img src="introduction-compact.gif" alt="VaultSessions Demo" width="700">
   </a>
 </p>
