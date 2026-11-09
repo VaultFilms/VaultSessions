@@ -16,6 +16,12 @@
 </p>
 
 <p align="center">
+  <a href="https://www.youtube.com/watch?v=SThMHqWE1Go">
+    <img src="docs/introduction-compact.gif" alt="VaultSessions Demo" width="700">
+  </a>
+</p>
+
+<p align="center">
   <a href="https://github.com/VaultFilms/VaultSessions/releases">
     <img src="https://img.shields.io/github/v/release/VaultFilms/VaultSessions?color=blue" alt="GitHub Release">
   </a>
