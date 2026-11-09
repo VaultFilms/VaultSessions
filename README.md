@@ -22,10 +22,10 @@
 </p>
 
 <p align="center">
-  <a href="https://hits.seeyoufarm.com">
-    <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FVaultFilms%2FVaultSessions&count_bg=%2379589F&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false" alt="Hits">
-  </a>
+  <img src="https://komorebi-views.vercel.app/api/views/VaultFilms/VaultSessions" alt="Views">
 </p>
+
+![Views](https://komorebi-views.vercel.app/api/views/VaultFilms/VaultSessions)
 
 **An open-source meeting app where humans and their personal AI assistants—ChatGPT, Gemini, and Claude—can think and collaborate together, using their existing personalization.**
 
