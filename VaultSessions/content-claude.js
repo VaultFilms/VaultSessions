@@ -119,9 +119,12 @@
     let userKey = messageKey(userMessage);
     const expectedIndex = previousUserTexts.length;
     const expectedText = canonicalText(prompt);
-    const matches = element => userText(element).includes(receipt) || canonicalText(userText(element)) === expectedText;
+    const matches = element => (receipt && userText(element).includes(receipt)) || canonicalText(userText(element)) === expectedText;
     let missingSince = null;
     let relayReadySince=null;
+    let silentReadySince = null;
+    const allowsNoReply = silent && (/^\[switch to (chat|debate)\]$/.test(prompt)
+      || (prompt.startsWith('You are participating in a group discussion\n') && prompt.includes('Debate persona:')));
     let svgSource = '', svgChangedAt = Date.now(), capturing = false;
     const homePath = value => value === '/new' || value === '/';
     const savedPath = value => /^\/chat\/[^/]+\/?$/.test(value);
@@ -200,6 +203,16 @@
           endJob('complete'); return;
         }
       }
+      if (allowsNoReply && !job.text && savedPath(path) && !generating()) {
+        const editor = findEditor();
+        const scope = userMessage.closest('[data-testid^=chat-message]') || userMessage.parentElement;
+        const hasError = [...(scope?.querySelectorAll?.('[role="alert"], [data-error="true"]') || [])].some(visible);
+        if (editor && !editor.disabled && editor.getAttribute('aria-disabled') !== 'true'
+            && !editor.closest('[aria-busy="true"]') && !normalize(read(editor)) && !hasError) {
+          silentReadySince ??= Date.now();
+          if (Date.now() - silentReadySince >= 2000) { endJob('complete'); return; }
+        } else silentReadySince = null;
+      } else silentReadySince = null;
       if (Date.now() - started > 180000) {
         endJob('error', '回答の完了を3分以内に確認できませんでした。途中の文章は表示しています。再送前にClaude側を確認してください。');
       }
@@ -218,10 +231,11 @@
   }
 
   async function send(text, requestId, foreground, silent, images = [], contextOnly = false, imageRelay = false) {
-    if (busy) throw new Error("このClaudeタブで送信処理中です。");
+    if (busy) throw Object.assign(new Error("このClaudeタブで送信処理中です。"), { code: "PROVIDER_BUSY" });
     if (typeof text !== "string" || !text.trim() || text.length > 75000) throw Error("The outgoing message is empty or exceeds 75,000 characters.");
-    const receipt = `Roundtable receipt: ${crypto.randomUUID()} (tracking only; do not repeat)`;
-    text += `\n\n${receipt}`;
+    const modeSwitch = silent && /^\[switch to (chat|debate)\]$/.test(text);
+    const receipt = modeSwitch ? null : `Roundtable receipt: ${crypto.randomUUID()} (tracking only; do not repeat)`;
+    if (receipt) text += `\n\n${receipt}`;
     if (text.length > 75000) throw Error("The outgoing message with its receipt exceeds 75,000 characters.");
     busy = true;
     job = { requestId, imageRelay, receipt, phase: 'sending', text: '', url: location.origin + location.pathname };
@@ -229,10 +243,10 @@
     let watching = false;
     try {
       if (foreground && !await waitFor(() => !document.hidden, 5000)) throw new Error('Claudeのタブが表示されていません。Claudeを表示してから送信してください。文章はまだ送信していません。');
-      if (generating()) throw new Error("Claudeが応答中です。完了してから送信してください。");
+      if (generating()) throw Object.assign(new Error("Claudeが応答中です。完了してから送信してください。"), { code: "PROVIDER_BUSY" });
       const editor = await waitFor(findEditor, 5000);
       if (!editor) throw new Error("Claudeの入力欄が見つかりません。ログイン、通常のチャット画面、読み込み完了を確認してください。DOM変更の可能性もあります。");
-      if (normalize(read(editor))) throw new Error("Claudeに下書きがあります。下書きを送信または削除してから実行してください。");
+      if (normalize(read(editor))) throw Object.assign(new Error("Claudeに下書きがあります。下書きを送信または削除してから実行してください。"), { code: "COMPOSER_DRAFT" });
       if (editor.disabled || editor.getAttribute("aria-disabled") === "true") throw new Error("Claudeの入力欄が無効です。");
       if (globalThis.RoundtableImageUpload) RoundtableImageUpload.checkDraft(editor);
       editor.focus();
@@ -267,7 +281,7 @@
       clicked = true;
       const confirmed = await waitFor(() => {
         return userBodies().find(element =>
-          !previousMessages.has(messageKey(element)) && (userText(element).includes(receipt) || canonicalText(userText(element)) === canonicalText(text)));
+          !previousMessages.has(messageKey(element)) && ((receipt && userText(element).includes(receipt)) || canonicalText(userText(element)) === canonicalText(text)));
       }, 12000);
       if (!confirmed) throw new Error("送信ボタンを押しましたが、送信完了を確認できませんでした。自動再送はしません。Claudeの画面を確認してください。");
       if(contextOnly){
@@ -281,7 +295,7 @@
     } catch (error) {
       job.phase = 'error';
       job.error = error.message;
-      return { ok: false, uncertain: clicked, error: error.message };
+      return { ok: false, uncertain: clicked, error: error.message, ...(error.code ? { code: error.code } : {}) };
     } finally {
       if (!watching) busy = false;
     }
@@ -349,7 +363,7 @@
       return;
     }
     if (message?.type !== "ROUNDTABLE_CLAUDE_SEND") return;
-    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
+    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message, code: error.code }));
     return true;
   });
 })();

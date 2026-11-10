@@ -3,7 +3,7 @@
 (function(root) {
   const Generated = typeof module !== 'undefined' && module.exports ? require('./generated-images.js') : root.RoundtableGeneratedImages;
   const Images = typeof module !== 'undefined' && module.exports ? require('./image-utils.js') : root.RoundtableImages;
-  const providers = ['chatgpt', 'gemini', 'claude'];
+  const providers = ['chatgpt', 'gemini', 'claude', 'grok'];
   const same = (a, b) => !!a && !!b && a.tabId === b.tabId && a.conversationUrl === b.conversationUrl;
   function attachment(image) {
     const type = image.dataUrl.slice(5, image.dataUrl.indexOf(';'));
@@ -15,7 +15,7 @@
     if (!Array.isArray(snapshot.tasks || []) || !Array.isArray(snapshot.flights || []) || !Array.isArray(snapshot.seen || [])) throw Error('Invalid image relay state.');
     const target = value => {
       if (!value || !providers.includes(value.provider) || !Number.isInteger(value.tabId) || typeof value.conversationUrl !== 'string' ||
-        !(value.provider === 'chatgpt' ? /^https:\/\/chatgpt\.com\/c\/[^/?#]+\/?$/ : value.provider === 'gemini' ? /^https:\/\/gemini\.google\.com\/(?:u\/\d+\/)?app\/[^/?#]+\/?$/ : /^https:\/\/claude\.ai\/chat\/[^/?#]+\/?$/).test(value.conversationUrl)) throw Error('Invalid image relay target.');
+        !(value.provider === 'grok' ? /^https:\/\/grok\.com\/c\/[^/?#]+\/?$/ : value.provider === 'chatgpt' ? /^https:\/\/chatgpt\.com\/c\/[^/?#]+\/?$/ : value.provider === 'gemini' ? /^https:\/\/gemini\.google\.com\/(?:u\/\d+\/)?app\/[^/?#]+\/?$/ : /^https:\/\/claude\.ai\/chat\/[^/?#]+\/?$/).test(value.conversationUrl)) throw Error('Invalid image relay target.');
       return {provider:value.provider,tabId:value.tabId,conversationUrl:value.conversationUrl};
     };
     const id = value => {if (typeof value !== 'string' || !/^[a-zA-Z0-9-]{1,120}$/.test(value)) throw Error('Invalid image relay ID.'); return value;};

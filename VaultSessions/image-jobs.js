@@ -35,6 +35,11 @@
             if(this.closed)break;
             if(!state?.ok || state.phase==='error')throw Error(state?.error||'Image generation was interrupted.');
             if(state.phase!=='complete')continue;
+            if (state.imageFallback === true && typeof state.text === 'string' && state.text.trim()) {
+              this.tasks.delete(task.requestId);
+              this.onEvent({type:'text-complete',task,text:state.text,richText:state.richText});
+              continue;
+            }
             const result=await this.collect(task);
             if(this.closed)break;
             if(result?.ok&&result.pending)continue;

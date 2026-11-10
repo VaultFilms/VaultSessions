@@ -30,22 +30,23 @@
   <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
-**An open-source meeting app where humans and their personal AI assistants—ChatGPT, Gemini, and Claude—can think and collaborate together, using their existing personalization.**
+**An open-source meeting app where humans and their personal AI assistants—ChatGPT, Gemini, Claude, and Grok—can think and collaborate together, using their existing personalization.**
 
 ## Features
 
-- **Bring your own AI personalities.** Connect the official web chats you already use, with their existing conversations and personalization. No AI API keys are required.
-- **Natural group discussions.** Connected AIs take turns, contribute new perspectives, and pass when they have nothing to add. One connected AI gives a single reply.
-- **Choose a first speaker naturally.** Use `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, or `To Gemini`. Otherwise, the first speaker is selected randomly.
-- **Share visual context.** Attach or paste up to four images and discuss them by number.
-- **Keep talking while ChatGPT or Gemini generates images.** When native image generation is detected, the generating AI becomes temporarily unavailable and you can talk to the other connected AIs. Completed previews appear beside the original request, without starting another discussion round. VS provides compressed previews; use the official chat for originals. Completed images are automatically shared with the other AIs connected at completion time. Each recipient receives images in order when its official chat is idle. Sharing replies stay out of the meeting log and discussion history. Generation or retrieval failures and timeouts are shown in the log; the AI returns automatically once its official chat is ready. Keep the official tab open; background progress depends on the provider and browser. Claude SVG code and SVG file previews are also supported; VS sanitizes and converts them into raster previews, without running SVG scripts or loading external resources.
-- **Share the current page.** In the side panel, open **+** and select **Attach this page to the next message** below the image uploader. VaultSessions captures the readable text currently on the page and includes it when you send that message. In meeting settings, set the page text limit from 1,000 to 50,000 characters. The default is 25,000. The capture limit is 120% of this setting, and the full discussion request limit is the setting plus 25,000 characters, including the transcript and instructions.
-- **Readable AI responses.** Preserve headings, lists, tables, emphasis, quotes, and code blocks from official replies with VaultSessions styling. Only allowlisted semantic elements and validated links are rebuilt; provider classes, styles, scripts, and embedded content are discarded. Formatting survives view changes while discussion history remains plain text.
-- **Summarize and copy.** Generate a summary for your own review or a future meeting.
-- **Side panel and fullscreen views.** Switch layouts, hide participant controls, and adjust log text size.
-- **Nine interface languages.** English, Japanese, French (France), German (Germany), Spanish (United States), Italian, Indonesian, Portuguese (Brazil), and Hindi. Initial selection follows browser preferences, with English as the fallback; manual choices are remembered. Dark mode follows the browser/system preference.
+- Connect ChatGPT, Gemini, Claude, or Grok using the accounts you already use.
+- Send one topic and let the connected AIs take turns. Use `@Grok` or another AI’s name to choose who answers first.
 
-VaultSessions is a proof of concept for a meeting interface that brings different AI contexts, personalities, and human perspectives into one discussion. It is not affiliated with or endorsed by OpenAI, Google, or Anthropic.
+**[Install VaultSessions](#installation)**
+
+> [!IMPORTANT]
+> **Use separate Chrome windows for VaultSessions and the official AI chats.**
+>
+> Keep VaultSessions (the side panel or the full meeting page) in one window. Put the official ChatGPT, Gemini, Claude, and Grok tabs you use in a second window. VaultSessions brings the selected AI tab to the front to send messages and collect replies. If both are in one window, that tab switch can hide the meeting or switch away from the page beside the side panel.
+>
+> Keep the official AI window small and park it in a corner of the screen. Keep the VaultSessions window large enough to follow the discussion.
+
+![A large VaultSessions window and a smaller official AI window in the lower-right corner.](docs/separate-chrome-windows.svg)
 
 ## Installation
 
@@ -69,7 +70,7 @@ VaultSessions/
 1. Download or clone this repository into a permanent folder.
 2. Open `chrome://extensions/` and enable **Developer mode**.
 3. Click **Load unpacked** and select **`VaultSessions/`**, the folder containing `manifest.json` (not the repository root).
-4. Open the official ChatGPT, Gemini, and/or Claude websites and sign in yourself.
+4. Open the official ChatGPT, Gemini, Claude, or Grok websites and sign in yourself.
 5. Click the VaultSessions extension icon on the tab where you want the meeting side panel.
 
 Use a current Chrome release. The manifest minimum is Chrome 116, but browser API and provider UI compatibility can vary. No build step or server is needed for normal meetings.
@@ -110,9 +111,17 @@ Available AI tabs connect automatically. If a provider has multiple open tabs, c
 
 Type a topic and press Enter. Shift+Enter inserts a newline; IME composition does not send. With multiple connected AIs, the first respondent is followed by the remaining participants in order. Mention a recipient anywhere in your message to choose the first respondent; matching is case-insensitive and the earliest explicit mention wins.
 
-Default limits are **3 contributions** and **6 requests**. PASS counts toward requests, not contributions. All connected participants passing consecutively also ends a discussion. Use **Stop discussion** to stop subsequent turns; an in-flight response may still need to finish before input unlocks.
+Default limits are **3 contributions** and **6 requests**. PASS counts toward requests, not contributions. Raise the contribution limit to 4 to allow four substantive replies in one discussion. The discussion also ends when rotation reaches the last speaker again without a new contribution. Use **Stop discussion** to stop subsequent turns; an in-flight response may still need to finish before input unlocks.
 
 AI tabs are foregrounded during sending and response collection. Avoid editing or navigating those conversations during a turn. Input protection helps prevent accidental typing after focus changes. Role instructions are ordinary chat messages, not system roles; preservation of personality and instruction compliance cannot be guaranteed.
+
+### Chat and Debate
+
+Choose **Chat** or **Debate** in **Meeting settings**. Chat is the default and uses each AI’s usual conversational style. Debate (formerly Dev) asks participants to examine one another’s claims, challenge assumptions, and surface overlooked risks or alternatives. Agreement and PASS are still valid when there is nothing new to add. Both modes keep the same participants, personalization, and meeting log. Debate also makes Inspector, Document Brief, and Create handoff available.
+
+### Grok
+
+Open a signed-in chat at [grok.com](https://grok.com/) and use **@Grok** or **To Grok** to choose it as the first responder. Grok was tested with a free account. If it hits a provider limit during discussion, use **Skip to the next AI** when offered to continue the same topic. Grok can receive image attachments. VaultSessions currently does not detect or relay images generated by Grok.
 
 ### Images and summaries
 
@@ -127,6 +136,24 @@ VaultSessions passes images to the official AI tab inside the browser, without a
 The header menu hides participant/settings controls. **A−**, **A＋**, and **Reset size** adjust log bodies, including summaries, from 75% to 175%. Text-size settings are shared between layouts and persist across browser restarts.
 
 Temporary snapshots use `chrome.storage.session`, with up to 500 displayed rows and 500 ordinary history entries per saved snapshot. The active view may contain more. This is not a durable archive. Language, text size, and the registered file URL use local browser storage. Unsent attachments are not preserved through view switches.
+
+<details>
+<summary>More about what VaultSessions can do</summary>
+
+- **Bring your own AI personalities.** Connect the official web chats you already use, with their existing conversations and personalization. No AI API keys are required.
+- **Natural group discussions.** Connected AIs take turns, contribute new perspectives, and pass when they have nothing to add. One connected AI gives a single reply.
+- **Choose a first speaker naturally.** Use `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, `@Grok`, or `To Gemini`. Otherwise, the first speaker is selected randomly.
+- **Share visual context.** Attach or paste up to four images and discuss them by number.
+- **Keep talking while ChatGPT or Gemini generates images.** When native image generation is detected, the generating AI becomes temporarily unavailable and you can talk to the other connected AIs. Completed previews appear beside the original request, without starting another discussion round. VS provides compressed previews; use the official chat for originals. Completed images are automatically shared with the other AIs connected at completion time. Each recipient receives images in order when its official chat is idle. Sharing replies stay out of the meeting log and discussion history. Generation or retrieval failures and timeouts are shown in the log; the AI returns automatically once its official chat is ready. Keep the official tab open; background progress depends on the provider and browser. Claude SVG code and SVG file previews are also supported; VS sanitizes and converts them into raster previews, without running SVG scripts or loading external resources.
+- **Share the current page.** In the side panel, open **+** and select **Attach this page to the next message** below the image uploader. VaultSessions captures the readable text currently on the page and includes it when you send that message. In meeting settings, set the page text limit from 1,000 to 50,000 characters. The default is 25,000. The capture limit is 120% of this setting, and the full discussion request limit is the setting plus 25,000 characters, including the transcript and instructions.
+- **Readable AI responses.** Preserve headings, lists, tables, emphasis, quotes, and code blocks from official replies with VaultSessions styling. Only allowlisted semantic elements and validated links are rebuilt; provider classes, styles, scripts, and embedded content are discarded. Formatting survives view changes while discussion history remains plain text.
+- **Summarize and copy.** Generate a summary for your own review or a future meeting.
+- **Side panel and fullscreen views.** Switch layouts, hide participant controls, and adjust log text size.
+- **Nine interface languages.** English, Japanese, French (France), German (Germany), Spanish (United States), Italian, Indonesian, Portuguese (Brazil), and Hindi. Initial selection follows browser preferences, with English as the fallback; manual choices are remembered. Dark mode follows the browser/system preference.
+
+</details>
+
+VaultSessions is a proof of concept for a meeting interface that brings different AI contexts, personalities, and human perspectives into one discussion. It is not affiliated with or endorsed by OpenAI, Google, or Anthropic.
 
 ### Privacy, permissions, and compatibility
 

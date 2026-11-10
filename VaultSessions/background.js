@@ -18,13 +18,14 @@ const localMeetingSender=sender=>sender.id===chrome.runtime.id&&sender.frameId==
 const webSender = sender => sender.id === chrome.runtime.id && isMeetingURL(sender.url) && sender.frameId === 0 && Number.isInteger(sender.tab?.id);
 
 
-const VERSION = '0.1.2';
+const VERSION = '0.1.3';
 const BRIDGE_VERSION = '0.5.1';
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const PROVIDERS = {
-  chatgpt: { foreground: true, bridgeVersion: '0.9.6', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
-  gemini: { foreground: true, bridgeVersion: '0.9.5', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
-  claude: { foreground: true, bridgeVersion: '0.10.5', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' }
+  chatgpt: { foreground: true, bridgeVersion: '0.9.7', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
+  gemini: { foreground: true, bridgeVersion: '0.9.6', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
+  claude: { foreground: true, bridgeVersion: '0.10.5', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' },
+  grok: { foreground: true, bridgeVersion: '0.1.0', name: 'Grok', pattern: 'https://grok.com/*', prefix: 'ROUNDTABLE_GROK' }
 };
 const cleanURL = url => url?.split(/[?#]/)[0];
 const sending = new Set();
@@ -189,7 +190,7 @@ async function locate(provider, message, reload = false) {
 
 async function inputGuard(tabId, requestId, lock, guardText, renew = false) {
   const result = await chrome.tabs.sendMessage(tabId, { type: 'ROUNDTABLE_INPUT_GUARD', requestId, lock, renew, guardText: typeof guardText==='string'&&guardText.length<=500?guardText:undefined }, { frameId: 0 });
-  if (lock && (!result?.guarded || result.version !== '0.7.6')) throw new Error('誤入力防止スクリプトが未更新です。拡張本体と3社の公式タブを再読み込みしてください。文章はまだ送信していません。');
+  if (lock && (!result?.guarded || result.version !== '0.7.6')) throw new Error('誤入力防止スクリプトが未更新です。拡張本体とAIの公式タブを再読み込みしてください。文章はまだ送信していません。');
 }
 async function releaseInput(tabId, requestId) {
   try { await inputGuard(tabId, requestId, false); } catch { /* Closed tabs need no recovery */ }
@@ -215,7 +216,7 @@ async function returnToMeeting(provider, sourceTabId, meetingTabId) {
 
 function savedRoleURL(providerId, url) {
   const path = new URL(url).pathname;
-  return providerId === 'chatgpt' ? /^\/c\/(?!local-chatgpt(?::|%3a))[^/]+\/?$/i.test(path)
+  return (providerId === 'chatgpt' || providerId === 'grok') ? /^\/c\/(?!local-chatgpt(?::|%3a))[^/]+\/?$/i.test(path)
     : providerId === 'gemini' ? /^\/app\/[^/]+\/?$/.test(path) : /^\/chat\/[^/]+\/?$/.test(path);
 }
 // Expire abandoned Role reservations so a manual retry can recover.
@@ -234,14 +235,14 @@ function roleState(providerId, provider, message, verifiedRecovery = false) {
     const saved = (await chrome.storage.local.get('roundtableRoleReady')).roundtableRoleReady;
     if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
       for (const [key, revision] of Object.entries(saved)) {
-        if (/^(chatgpt|gemini|claude):https:\/\//.test(key) && [1, 2].includes(revision)) data.ready[key] ??= revision;
+        if (/^(chatgpt|gemini|claude|grok):https:\/\//.test(key) && [1, 2, 3].includes(revision)) data.ready[key] ??= revision;
       }
     }
     const tabKey = `${providerId}:${message.tabId}`;
     const urlKey = `${providerId}:${cleanURL(message.conversationUrl)}`;
     if (message.operation === 'adopt') {
       if (cleanURL(tab.url) !== message.conversationUrl || !savedRoleURL(providerId, message.conversationUrl)) throw new Error('Role復旧時の会話が一致しません。');
-      data.ready[urlKey] = providerId === 'claude' ? 1 : 2;
+      data.ready[urlKey] = message.revision === 3 ? 3 : providerId === 'claude' ? 1 : 2;
       delete data.pending[tabKey];
     } else if (message.operation === 'reset' || message.operation === 'begin') {
       const url = cleanURL(message.conversationUrl);
@@ -266,7 +267,7 @@ function roleState(providerId, provider, message, verifiedRecovery = false) {
         return { ok: true, state: 'reset' };
       }
       if (conflicts.length) throw Object.assign(new Error('Roleの送信が未完了、または結果が不明です。公式タブを確認し、カードのRole再設定を押してください。自動再送はしません。'), { code: 'ROLE_UNCERTAIN' });
-      if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId) || ![1, 2].includes(message.revision)) throw new Error('Role送信IDが不正です。');
+      if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId) || ![1, 2, 3].includes(message.revision)) throw new Error('Role送信IDが不正です。');
       data.pending[tabKey] = { provider: providerId, requestId: message.requestId, url: message.conversationUrl, revision: message.revision, state: 'pending', startedAt: now };
     } else {
       const pending = data.pending[tabKey];
@@ -352,13 +353,27 @@ function handleMeetingMessage(message, sender, respond) {
   }
   if (message?.type === 'ROUNDTABLE_HELLO') { respond({ ok: true, version: VERSION }); return; }
   if(message?.type==='ROUNDTABLE_DISCOVER'){discoverProviders().then(providers=>respond({ok:true,providers}),error=>respond({ok:false,error:error.message}));return true;}
-  if (!['ROUNDTABLE_INSPECT', 'ROUNDTABLE_INSPECTOR_CONTEXT', 'ROUNDTABLE_INSPECTOR_SHARE', 'ROUNDTABLE_CONNECT', 'ROUNDTABLE_RELOAD_CONNECT', 'ROUNDTABLE_SEND', 'ROUNDTABLE_STATUS', 'ROUNDTABLE_ROLE_STATE', 'ROUNDTABLE_RECOVER_ROLE', 'ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_IMAGE_RESULT', 'ROUNDTABLE_IMAGE_IDLE'].includes(message?.type)) return;
+  if (!['ROUNDTABLE_INSPECT', 'ROUNDTABLE_INSPECTOR_CONTEXT', 'ROUNDTABLE_INSPECTOR_SHARE', 'ROUNDTABLE_CLEAR_DRAFT', 'ROUNDTABLE_CONNECT', 'ROUNDTABLE_RELOAD_CONNECT', 'ROUNDTABLE_SEND', 'ROUNDTABLE_STATUS', 'ROUNDTABLE_ROLE_STATE', 'ROUNDTABLE_RECOVER_ROLE', 'ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_IMAGE_RESULT', 'ROUNDTABLE_IMAGE_IDLE'].includes(message?.type)) return;
   (async () => {
     const providerId = message.provider;
     const provider = Object.hasOwn(PROVIDERS, providerId) && PROVIDERS[providerId];
     if (!provider) throw new Error('送信先のAIが不明です。');
     if (['ROUNDTABLE_CONNECT','ROUNDTABLE_RELOAD_CONNECT','ROUNDTABLE_SEND','ROUNDTABLE_ROLE_STATE','ROUNDTABLE_RECOVER_ROLE'].includes(message.type)) await meetingSessions.verify(message.clientId);
     if(['ROUNDTABLE_INSPECT','ROUNDTABLE_INSPECTOR_CONTEXT','ROUNDTABLE_INSPECTOR_SHARE'].includes(message.type))await meetingSessions.verify(message.clientId);
+    if (message.type === 'ROUNDTABLE_CLEAR_DRAFT') {
+      await meetingSessions.verify(message.clientId);
+      if (providerId !== 'chatgpt' || !Number.isInteger(message.tabId) || typeof message.draftToken !== 'string'
+          || !/^[a-zA-Z0-9-]{1,80}$/.test(message.draftToken) || sending.has(providerId)) {
+        throw Error('The ChatGPT draft cannot be cleared for this request.');
+      }
+      const { tab } = await locate(provider, message);
+      try {
+        await activateProvider(tab);
+        return await deliver(provider, tab.id, { type: provider.prefix + '_CLEAR_DRAFT', draftToken: message.draftToken });
+      } finally {
+        await returnToMeeting(provider, tab.id, message.returnTabId);
+      }
+    }
     if(message.type==='ROUNDTABLE_INSPECT'){
       const {tab}=await locate(provider,message);
       const result=await deliver(provider,tab.id,{type:provider.prefix+'_INSPECT'});
@@ -366,7 +381,7 @@ function handleMeetingMessage(message, sender, respond) {
     }
     const sharing=message.type==='ROUNDTABLE_INSPECTOR_SHARE';
     if(sharing&&(!/^[a-zA-Z0-9-]{1,80}$/.test(message.recordId||'')||typeof message.report!=='string'||message.report.length>15000))throw Error('Invalid Inspector report.');
-    if(sharing){const report=JSON.parse(message.report);if(report.schema!==1||!['chatgpt','gemini','claude'].includes(report.provider)||!Array.isArray(report.checks))throw Error('Invalid Inspector report.');}
+    if(sharing){const report=JSON.parse(message.report);if(report.schema!==1||!Object.hasOwn(PROVIDERS, report.provider)||!Array.isArray(report.checks))throw Error('Invalid Inspector report.');}
     const contextOnly=sharing||message.type==='ROUNDTABLE_INSPECTOR_CONTEXT';
     if(contextOnly)message={...message,text:VaultInspectorContext.text,silent:true,images:[]};
     if (message.type === 'ROUNDTABLE_ROLE_STATE') return roleState(providerId, provider, message);
@@ -375,7 +390,7 @@ function handleMeetingMessage(message, sender, respond) {
       const { tab } = await locate(provider, message);
       const result = await deliver(provider, tab.id, { type: `${provider.prefix}_RECOVER_ROLE`, text: message.text });
       if (!result.ok) return result;
-      if (result.recovered) await roleState(providerId, provider, { operation: 'adopt', tabId: tab.id, conversationUrl: result.url }, true);
+      if (result.recovered) await roleState(providerId, provider, { operation: 'adopt', tabId: tab.id, conversationUrl: result.url, revision: message.revision }, true);
       return { ok: true, recovered: result.recovered === true };
     }
     if (['ROUNDTABLE_CONNECT', 'ROUNDTABLE_RELOAD_CONNECT'].includes(message.type)) {
@@ -387,11 +402,11 @@ function handleMeetingMessage(message, sender, respond) {
     if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId)) throw new Error('送信IDが不正です。会議ページを再読み込みしてください。');
     if (message.type === 'ROUNDTABLE_IMAGE_IDLE') {
       await meetingSessions.verify(message.clientId);
-      if (!['chatgpt','gemini','claude'].includes(providerId) || !Number.isInteger(message.tabId)) throw Error('Invalid image-generation target.');
+      if (!Number.isInteger(message.tabId)) throw Error('Invalid image-generation target.');
       let tab;try{tab=await chrome.tabs.get(message.tabId);}catch{return {ok:true,idle:true,disconnected:true};}
       if (cleanURL(tab.url)!==message.conversationUrl) return {ok:true,idle:true,disconnected:true};
       const state=await deliver(provider,tab.id,{type:provider.prefix+'_HELLO'});
-      return {ok:true,idle:state.ok===true&&state.busy===false,disconnected:state.ready===false};
+      return {ok:true,idle:state.ok===true&&state.busy===false,disconnected:state.ready===false&&state.busy!==true};
     }
     if (['ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_IMAGE_RESULT'].includes(message.type)) {
       await meetingSessions.verify(message.clientId);
@@ -399,6 +414,11 @@ function handleMeetingMessage(message, sender, respond) {
       const tab = await chrome.tabs.get(message.tabId);
       if (!tab.url?.startsWith(providerId === 'chatgpt' ? 'https://chatgpt.com/' : providerId === 'gemini' ? 'https://gemini.google.com/' : 'https://claude.ai/')) throw Error('The image-generation tab has closed or changed.');
       const state = await deliver(provider, tab.id, {type:provider.prefix+'_STATUS',requestId:message.requestId});
+      if (message.type === 'ROUNDTABLE_DETACH_IMAGE' && state.ok && state.phase === 'complete' && state.imageFallback === true) {
+        await releaseInput(tab.id, message.requestId);
+        await returnToMeeting(provider, tab.id, message.returnTabId);
+        return {ok:true,reply:{text:state.text,richText:RoundtableRichText.clean(state.richText),url:state.url}};
+      }
       if (!state.ok || state.kind !== 'image' || !['generating_image','complete'].includes(state.phase)) throw Error('No matching image-generation task was found.');
       if (message.type === 'ROUNDTABLE_IMAGE_RESULT') {
         const result = await deliver(provider, tab.id, {type:provider.prefix+'_IMAGE_RESULT',requestId:message.requestId});
@@ -422,10 +442,18 @@ function handleMeetingMessage(message, sender, respond) {
     }
     if (message.type === 'ROUNDTABLE_STATUS') {
       if (!Number.isInteger(message.tabId)) throw new Error('送信先タブが不明です。');
+      if (message.skipReply === true) {
+        await meetingSessions.verify(message.clientId);
+        const tab = await chrome.tabs.get(message.tabId);
+        if (!tab.url?.startsWith(provider.pattern.replace('*', ''))) throw Error('The reply tab has changed.');
+        await releaseInput(tab.id, message.requestId);
+        await returnToMeeting(provider, tab.id, message.returnTabId);
+        return {ok:true};
+      }
       let result;
       try { result = await deliver(provider, message.tabId, { type: `${provider.prefix}_STATUS`, requestId: message.requestId }); }
       catch (error) { await releaseInput(message.tabId, message.requestId); throw error; }
-      const detached = (message.backgroundImage === true && result.kind === 'image') || result.imageRelay === true;
+      const detached = message.backgroundImage === true || result.imageRelay === true;
       if (!detached && provider.foreground && result.ok && ['sending', 'waiting', 'streaming', 'generating_image'].includes(result.phase)) {
         await inputGuard(message.tabId, message.requestId, true, undefined, true);
       }

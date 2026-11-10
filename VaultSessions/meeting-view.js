@@ -104,7 +104,7 @@
   document.querySelector('#discussion-settings').addEventListener('change',()=>void save());
   // Persist busy state immediately at turn start and end so another view cannot acquire an active meeting.
   const onEvent=controller.onEvent;
-  controller.onEvent=event=>{onEvent(event);if(['started','idle'].includes(event.type))void save();};
+  controller.onEvent=event=>{onEvent(event);if(['started','resumed','idle'].includes(event.type))void save();};
   window.addEventListener('focus',async()=>{
     if(meetingRestoring||closing||!globalThis.chrome?.runtime?.id)return;
     try{const result=await request({type:'ROUNDTABLE_SESSION',operation:'load'});if(result.active===false){meetingActive=false;automaticInvitations?.dispose();syncControls();}}catch{}

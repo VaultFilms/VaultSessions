@@ -8,12 +8,14 @@ function renderResponse(element,text,richText){
 function responseText(element){
   return globalThis.RoundtableRichText?.read(element)?.text ?? element?.innerText ?? element?.textContent ?? '';
 }
-const VERSION = '0.1.2';
+const VERSION = '0.1.3';
 // Accept compatible service workers after UI-only updates.
-const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.2']);
+const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.3']);
 const meetingClientId = crypto.randomUUID();
 let meetingActive = true;
 let summaryBusy = false;
+let modeUpdates = 0;
+let draftClearBusy = false;
 let viewSwitching = false;
 let meetingRestoring = !!globalThis.chrome?.runtime?.id;
 const isSidePanel = new URLSearchParams(location.search).get('view') === 'sidepanel';
@@ -21,7 +23,8 @@ document.body.classList.toggle('side-panel', isSidePanel);
 const providers = {
   chatgpt: { name: 'ChatGPT', origin: 'https://chatgpt.com/*', foreground: true },
   gemini: { name: 'Gemini', origin: 'https://gemini.google.com/*', foreground: true },
-  claude: { name: 'Claude', origin: 'https://claude.ai/*', foreground: true }
+  claude: { name: 'Claude', origin: 'https://claude.ai/*', foreground: true },
+  grok: { name: 'Grok', origin: 'https://grok.com/*', foreground: true }
 };
 const form = document.querySelector('#meeting-form');
 const input = document.querySelector('#message');
@@ -63,12 +66,14 @@ const targets = {};
 let imageJobs = null;
 let imageRelays = null;
 const providerExchanges = new Map();
-const providerAvailable = id => !!targets[id] && !imageJobs?.isBusy(id) && !imageRelays?.isBusy(id);
+const skippedReplyTabs = new Map();
+const waitingOnSkippedReply = id => !!targets[id] && skippedReplyTabs.get(id)?.tabId === targets[id].tabId;
+const providerAvailable = id => !!targets[id] && !waitingOnSkippedReply(id) && !imageJobs?.isBusy(id) && !imageRelays?.isBusy(id);
 const cards = {};
 const connecting = new Set();
 let automaticInvitations = null;
 const pendingDepartures = new Set();
-const isConnecting = () => connecting.size > 0;
+const isConnecting = () => draftClearBusy || modeUpdates > 0 || connecting.size > 0;
 let composing = false;
 let pageLoading = false;
 let attachedPage = null;
@@ -134,6 +139,8 @@ removePage.addEventListener('click', () => {
 window.addEventListener('vaultsessions-language',renderPageLimits);
 renderPageLimits();
 const language = document.querySelector('#meeting-language');
+const meetingMode = document.querySelector('#meeting-mode');
+const currentMode = () => meetingMode.value === 'dev' ? 'debate' : 'chat';
 const stopButton = document.querySelector('#stop-discussion');
 const speaker = document.querySelector('#current-speaker');
 const counters = document.querySelector('#discussion-counts');
@@ -141,13 +148,14 @@ const runRows = new Map();
 const controller = new RoundtableDiscussion.DiscussionController({
   languageNames: globalThis.VaultI18n?.locales.map(item=>item.meetingLanguage),
   order: Object.keys(providers), names: Object.fromEntries(Object.entries(providers).map(([id, value]) => [id, value.name])),
+  getMode: currentMode,
   getManual: ({question,language:answerLanguage}) => VaultManual.prompt(question,answerLanguage,VaultManual.capture(document,{
-    view:isSidePanel?'sidepanel':'fullscreen',uiLanguage:VaultI18n.locale,mode:document.querySelector('#meeting-mode').value,protocol:location.protocol,
+    view:isSidePanel?'sidepanel':'fullscreen',uiLanguage:VaultI18n.locale,mode:currentMode(),protocol:location.protocol,
     connections:Object.keys(providers).map(id=>({name:providers[id].name,connected:!!targets[id],available:providerAvailable(id)}))
   },key=>VaultI18n.t(key))),
-  getTarget: id => targets[id], isAvailable: id => !imageJobs?.isBusy(id) && !imageRelays?.isBusy(id), exchange,
-  recoverRole: async (provider, text) => {
-    const result = await request({ type: 'ROUNDTABLE_RECOVER_ROLE', provider, text, ...targets[provider] });
+  getTarget: id => targets[id], isAvailable: id => !waitingOnSkippedReply(id) && !imageJobs?.isBusy(id) && !imageRelays?.isBusy(id), exchange,
+  recoverRole: async (provider, text, revision) => {
+    const result = await request({ type: 'ROUNDTABLE_RECOVER_ROLE', provider, text, revision, ...targets[provider] });
     return result.recovered === true;
   },
   roleState: (operation, provider, target, extra = {}) => request({ type: 'ROUNDTABLE_ROLE_STATE', operation, provider, ...target, ...extra }),
@@ -194,10 +202,16 @@ function renderParticipants() {
 }
 function syncControls() {
   const running = (controller.running || summaryBusy) || !meetingActive || meetingRestoring;
+  meetingMode.disabled = running || isConnecting() || viewSwitching;
   reloadExtension.disabled = isConnecting() || (controller.running || summaryBusy) || meetingRestoring;
+  const paused = controller.paused;
+  const skipDraft = runRows.get(paused?.id)?.skipDraft;
+  const clearDraft = runRows.get(paused?.id)?.clearDraft;
+  if (clearDraft) clearDraft.button.disabled = running || viewSwitching || isConnecting();
+  if (skipDraft) skipDraft.disabled = running || viewSwitching || isConnecting() || !controller.nextAfterDraft(paused);
   button.disabled = isConnecting() || running || imageLoading || pageLoading || !Object.keys(targets).some(providerAvailable);
   if (running && document.activeElement === input) input.blur();
-  input.disabled = isConnecting() || running || !Object.keys(targets).some(providerAvailable);
+  input.disabled = isConnecting() || running || !Object.keys(targets).some(id => providerAvailable(id) || waitingOnSkippedReply(id));
   imageInput.disabled = isConnecting() || running || imageLoading;
   imageRemove.disabled = isConnecting() || running || imageLoading;
   for (const remove of imagePreview.querySelectorAll('button')) remove.disabled = isConnecting() || running || imageLoading;
@@ -207,9 +221,10 @@ function syncControls() {
   stopButton.disabled = !controller.running;
   button.textContent = (controller.running || summaryBusy) ? VaultI18n.t('message_010') : !meetingActive ? VaultI18n.t('message_011') : VaultI18n.t('message_012');
   for (const [id, card] of Object.entries(cards)) {
-    card.invite.disabled = connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring || !!targets[id] || !!imageJobs?.isBusy(id);
-    card.leave.disabled = connecting.has(id) || pendingDepartures.has(id);
-    for (const control of [card.select, card.reload, card.allow, card.roleRetry]) control.disabled = connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring;
+    if (card.clearDraft) card.clearDraft.button.disabled = running || viewSwitching || isConnecting();
+    card.invite.disabled = draftClearBusy || modeUpdates > 0 || connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring || !!targets[id] || !!imageJobs?.isBusy(id);
+    card.leave.disabled = draftClearBusy || modeUpdates > 0 || connecting.has(id) || pendingDepartures.has(id);
+    for (const control of [card.select, card.reload, card.allow, card.roleRetry]) control.disabled = draftClearBusy || modeUpdates > 0 || connecting.has(id) || (controller.running || summaryBusy) || meetingRestoring;
   }
   renderAutomaticCards();
   document.querySelector('#switch-view').disabled = viewSwitching || imageRelays?.busy || (controller.running || summaryBusy) || isConnecting() || imageLoading || pageLoading || meetingRestoring;
@@ -237,10 +252,41 @@ async function request(message) {
   }
   if (!result?.ok) {
     const error = new Error(result?.error || VaultI18n.t('message_016'));
-    Object.assign(error, { uncertain: result?.uncertain, retry: result?.retry, code: result?.code, candidates: result?.candidates, targetTabId: result?.targetTabId });
+    Object.assign(error, { uncertain: result?.uncertain, retry: result?.retry, code: result?.code, draftToken: result?.draftToken, candidates: result?.candidates, targetTabId: result?.targetTabId });
     throw error;
   }
   return result;
+}
+function draftClearAction(target, token, resume) {
+  const element = document.createElement('div');
+  const question = document.createElement('p');
+  question.className = 'note';
+  question.dataset.i18n = 'confirmChatGPTDraft';
+  question.textContent = VaultI18n.t('confirmChatGPTDraft');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'draft-skip';
+  button.dataset.i18n = 'clearDraftContinue';
+  button.textContent = VaultI18n.t('clearDraftContinue');
+  element.append(question, button);
+  button.addEventListener('click', async () => {
+    if (button.disabled || isConnecting() || !meetingActive || viewSwitching) return;
+    draftClearBusy = true;
+    syncControls();
+    try {
+      const ownTab = isSidePanel ? (await chrome.tabs.query({active:true,currentWindow:true}))[0] : await chrome.tabs.getCurrent();
+      await request({ type: 'ROUNDTABLE_CLEAR_DRAFT', provider: 'chatgpt', ...target, draftToken: token, returnTabId: ownTab?.id });
+      await request({ type: 'ROUNDTABLE_ROLE_STATE', operation: 'reset', provider: 'chatgpt', ...target });
+    } catch (error) {
+      setStatus('error', error.message, { inLog: false });
+      return;
+    } finally {
+      draftClearBusy = false;
+      syncControls();
+    }
+    await resume();
+  });
+  return { element, button };
 }
 async function finishInvitation(id, result) {
   const card = cards[id];
@@ -253,6 +299,7 @@ async function finishInvitation(id, result) {
   }
   card.autoIssue = false;
   card.roleRetry.hidden = true; card.roleTarget = null;
+  card.clearDraft?.element.remove(); card.clearDraft = null;
   card.picker.hidden = true;
   card.recovery.hidden = true;
   card.allow.hidden = true;
@@ -277,6 +324,13 @@ function invitationError(id, error) {
     card.recovery.hidden = false;
   }
   if (error.code === 'SITE_ACCESS') card.allow.hidden = false;
+  card.clearDraft?.element.remove();
+  card.clearDraft = null;
+  if (id === 'chatgpt' && error.code === 'COMPOSER_DRAFT' && error.draftToken && card.roleTarget) {
+    const target = card.roleTarget;
+    card.clearDraft = draftClearAction(target, error.draftToken, () => invite(id, false, target.tabId));
+    card.roleRetry.before(card.clearDraft.element);
+  }
   const state=error.code==='CHOOSE_TAB'?'ready':'error';
   providerStatus(id, state, error.message);
   setStatus(state, `${providers[id].name}: ${error.message}`);
@@ -309,11 +363,14 @@ async function invite(id, reload = false, overrideTabId = null) {
     const result = await request({ type: reload ? 'ROUNDTABLE_RELOAD_CONNECT' : 'ROUNDTABLE_CONNECT', provider: id,
       ...(selectedTabId == null ? {} : { selectedTabId }) });
     await finishInvitation(id, result);
-  } catch (error) { invitationError(id, error); }
-  finally {
+  } catch (error) {
+    invitationError(id, error);
+    return;
+  } finally {
     connecting.delete(id);
     renderParticipants();
   }
+  if (currentMode() === 'debate') await updateParticipantModes([id], 'debate');
 }
 function createInvitationCard(id) {
   const name = providers[id].name;
@@ -362,7 +419,10 @@ function createInvitationCard(id) {
     if (connecting.has(id) || (controller.running || summaryBusy) || !card.roleTarget) return;
     connecting.add(id); syncControls();
     const target = card.roleTarget;
-    try { await request({ type: 'ROUNDTABLE_ROLE_STATE', operation: 'reset', provider: id, ...target }); }
+    try {
+      const current = await request({ type: 'ROUNDTABLE_CONNECT', provider: id, selectedTabId: target.tabId });
+      await request({ type: 'ROUNDTABLE_ROLE_STATE', operation: 'reset', provider: id, tabId: current.tabId, conversationUrl: current.url });
+    }
     catch (error) { invitationError(id, error); return; }
     finally { connecting.delete(id); syncControls(); }
     await invite(id, false, target.tabId);
@@ -438,14 +498,14 @@ async function exchangeForeground(id, text, options = {}) {
   const previous = foregroundTail;
   let release;
   foregroundTail = new Promise(resolve => { release = resolve; });
-  if (options.silent) providerStatus(id, 'sending', VaultI18n.t('message_034'));
+  if (options.silent && !options.modeSwitch) providerStatus(id, 'sending', VaultI18n.t('message_034'));
   await previous;
   try {
-    if (options.silent) providerStatus(id, 'sending', VaultI18n.t('message_035'));
+    if (options.silent && !options.modeSwitch) providerStatus(id, 'sending', VaultI18n.t('message_035'));
     return await performExchange(id, text, options);
   } finally { release(); }
 }
-async function performExchange(id, text, { silent = false, requireReply = false, images = [], requestId = crypto.randomUUID(), onProgress = () => {} } = {}) {
+async function performExchange(id, text, { silent = false, requireReply = false, canSkipReply = false, images = [], requestId = crypto.randomUUID(), onProgress = () => {} } = {}) {
   await request({ type: 'ROUNDTABLE_HELLO' });
   // Side-panel pages have no own tab. Continue the meeting in the panel after switching to an AI tab.
   const ownTab = providers[id].foreground ? (isSidePanel ? (await chrome.tabs.query({active:true,currentWindow:true}))[0] : await chrome.tabs.getCurrent()) : null;
@@ -457,26 +517,93 @@ async function performExchange(id, text, { silent = false, requireReply = false,
   };
   if (!silent && run?.cancelled) return { cancelledBeforeSend: true };
   stage(images.length ? VaultI18n.t('message_036') : VaultI18n.t('message_037'));
-  const result = await request({ type: 'ROUNDTABLE_SEND', provider: id, guardText: VaultI18n.t('inputGuardNotice'), text, images, requestId, silent, requireReply, returnTabId: ownTab?.id, ...targets[id] });
+  let result;
+  try {
+    result = await request({ type: 'ROUNDTABLE_SEND', provider: id, guardText: VaultI18n.t('inputGuardNotice'), text, images, requestId, silent, requireReply, returnTabId: ownTab?.id, ...targets[id] });
+  } catch (error) {
+    if (error.code === 'PROVIDER_BUSY' && !error.uncertain) trackBusyReply(id, requestId);
+    throw error;
+  }
   targets[id] = { tabId: result.tabId, conversationUrl: result.url };
   renderConnection();
   stage(VaultI18n.t('message_038'));
-  const until = Date.now() + 195000;
-  while (Date.now() < until) {
-    const state = await request({ type: 'ROUNDTABLE_STATUS', provider: id, requestId, tabId: result.tabId, returnTabId: ownTab?.id });
-    if (state.url) { targets[id] = { tabId: result.tabId, conversationUrl: state.url }; renderConnection(); }
-    if (state.phase === 'error') throw new Error(state.error || VaultI18n.t('message_039'));
-    if (!silent && run && state.kind === 'image') {
-      await request({type:'ROUNDTABLE_DETACH_IMAGE',provider:id,tabId:result.tabId,requestId,returnTabId:ownTab?.id});
-      const completed = state.phase === 'complete' ? await request({type:'ROUNDTABLE_IMAGE_RESULT',provider:id,tabId:result.tabId,requestId}) : null;
-      return {detachedImage:true,images:completed?.images,task:{provider:id,tabId:result.tabId,requestId,conversationUrl:state.url||targets[id].conversationUrl,startedAt:Date.now(),topic:run.text.slice(0,1000)}};
-    }
-    if (state.phase === 'complete') { stage(VaultI18n.t('message_040')); return { text: state.text || '', richText:state.richText, url: state.url }; }
-    stage(state.phase === 'streaming' ? VaultI18n.t('message_041') : VaultI18n.t('message_038'));
-    if (!silent) onProgress(state.text || '',state.richText);
-    await new Promise(resolve => setTimeout(resolve, 800));
+  const row = canSkipReply && runRows.get(run?.id)?.answer;
+  let skipped = false, wake;
+  let skip;
+  if (row) {
+    skip = document.createElement('button');
+    skip.type = 'button';
+    skip.className = 'draft-skip';
+    skip.dataset.i18n = 'skipWaitingReply';
+    skip.textContent = VaultI18n.t('skipWaitingReply');
+    skip.addEventListener('click', () => {
+      if (run.cancelled || skipped) return;
+      skipped = true;
+      skip.disabled = true;
+      wake?.();
+    });
+    row.entry.append(skip);
   }
-  throw new Error(VaultI18n.t('message_042'));
+  try {
+    const until = Date.now() + 195000;
+    while (!skipped && Date.now() < until) {
+      const state = await request({ type: 'ROUNDTABLE_STATUS', provider: id, requestId, tabId: result.tabId, returnTabId: ownTab?.id });
+      if (skipped) break;
+      if (state.url) { targets[id] = { tabId: result.tabId, conversationUrl: state.url }; renderConnection(); }
+      if (state.phase === 'error') {
+        throw Object.assign(new Error(state.error || VaultI18n.t('message_039')), {code:state.code, uncertain:true});
+      }
+      if (!silent && run && state.kind === 'image') {
+        skip?.remove();
+        const detached = await request({type:'ROUNDTABLE_DETACH_IMAGE',provider:id,tabId:result.tabId,requestId,returnTabId:ownTab?.id});
+        if (detached.reply) return detached.reply;
+        const completed = state.phase === 'complete' ? await request({type:'ROUNDTABLE_IMAGE_RESULT',provider:id,tabId:result.tabId,requestId}) : null;
+        return {detachedImage:true,images:completed?.images,task:{provider:id,tabId:result.tabId,requestId,conversationUrl:state.url||targets[id].conversationUrl,startedAt:Date.now(),topic:run.text.slice(0,1000)}};
+      }
+      if (state.phase === 'complete') { stage(VaultI18n.t('message_040')); return { text: state.text || '', richText:state.richText, url: state.url }; }
+      stage(state.phase === 'streaming' ? VaultI18n.t('message_041') : VaultI18n.t('message_038'));
+      if (!silent) onProgress(state.text || '',state.richText);
+      await new Promise(resolve => {
+        const timer = setTimeout(resolve, 800);
+        wake = () => { clearTimeout(timer); resolve(); };
+      });
+      wake = null;
+    }
+    if (!skipped) throw new Error(VaultI18n.t('message_042'));
+  } catch (error) {
+    if (!skipped) throw error;
+  } finally {
+    skip?.remove();
+  }
+  trackBusyReply(id, requestId);
+  try {
+    await request({ type: 'ROUNDTABLE_STATUS', provider: id, requestId, tabId: result.tabId, returnTabId: ownTab?.id, skipReply: true });
+  } catch {
+    // The official tab may have closed since the user clicked skip.
+  }
+  return { skippedReply: true };
+}
+function trackBusyReply(id, requestId) {
+  const target = targets[id];
+  if (!target || waitingOnSkippedReply(id)) return;
+  skippedReplyTabs.set(id, target);
+  void waitForSkippedReply(id, target, requestId);
+}
+async function waitForSkippedReply(id, target, requestId) {
+  try {
+    while (meetingActive && targets[id] === target) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!meetingActive || targets[id] !== target) break;
+      const state = await request({ type: 'ROUNDTABLE_IMAGE_IDLE', provider: id, requestId, ...target });
+      if (state.idle || state.disconnected) break;
+    }
+  } catch {
+    // A closed or reloaded official tab no longer has this in-flight request.
+  } finally {
+    if (skippedReplyTabs.get(id) === target) skippedReplyTabs.delete(id);
+    syncControls();
+    void imageRelays?.poll();
+  }
 }
 function renderConnection() {
   connection.textContent = Object.entries(targets).map(([id, target]) => `${providers[id].name}: ${target.conversationUrl}`).join('\n');
@@ -587,6 +714,17 @@ function discussionEvent(event) {
       counters.textContent = VaultI18n.t('message_055', {0:event.speeches,1:event.queries,2:event.passes});
       setStatus('sending', VaultI18n.t('message_061', {0:providers[event.provider].name}));
       break;
+    case 'reply-skipped': {
+      const row = answerRow(record, event.provider);
+      row.body.textContent = VaultI18n.t('waitingReplySkipped');
+      row.meta.textContent = '';
+      row.entry.classList.remove('pending');
+      row.body.removeAttribute('role');
+      row.pending = false;
+      record.answer = null;
+      counters.textContent = VaultI18n.t('message_055', {0:event.speeches,1:event.queries,2:event.passes});
+      break;
+    }
     case 'pass':
       removeAnswer(record);
       counters.textContent = VaultI18n.t('message_055', {0:event.speeches,1:event.queries,2:event.passes});
@@ -610,6 +748,46 @@ function discussionEvent(event) {
       counters.textContent = VaultI18n.t('message_055', {0:event.speeches,1:event.queries,2:event.passes});
       break;
     }
+    case 'busy-blocked':
+    case 'draft-blocked': {
+      const row = answerRow(record, event.provider);
+      setStatus('error', event.error);
+      row.pending = false;
+      row.entry.classList.remove('pending');
+      row.entry.classList.add('failed');
+      row.body.removeAttribute('role');
+      record.answer = null;
+      counters.textContent = VaultI18n.t('message_055', {0:event.speeches,1:event.queries,2:event.passes});
+      if (event.draftToken) {
+        record.clearDraft = draftClearAction({ ...targets[event.provider] }, event.draftToken, () => controller.retryDraft(event.runId));
+        row.entry.append(record.clearDraft.element);
+      }
+      if (event.canSkip) {
+        const skip = document.createElement('button');
+        skip.type = 'button';
+        skip.className = 'draft-skip';
+        skip.dataset.i18n = 'skipDraftAI';
+        skip.textContent = VaultI18n.t('skipDraftAI');
+        skip.addEventListener('click', () => {
+          if (!skip.disabled && !controller.skipDraft(event.runId)) syncControls();
+        });
+        row.entry.append(skip);
+        record.skipDraft = skip;
+      }
+      scrollToLatest();
+      break;
+    }
+    case 'resumed':
+    case 'draft-action-cleared':
+      record.skipDraft?.remove();
+      record.skipDraft = null;
+      record.clearDraft?.element.remove();
+      record.clearDraft = null;
+      if (event.type === 'resumed') {
+        setStatus('sending', VaultI18n.t('message_037'), { inLog: false });
+        syncControls();
+      }
+      break;
     case 'error':
       if (record?.answer) { record.answer.entry.classList.add('failed'); record.answer.meta.textContent = VaultI18n.t('message_071'); }
       if (record) record.user.meta.textContent = VaultI18n.t('message_072');
@@ -678,6 +856,35 @@ input.addEventListener('paste', event => {
 });
 imageRemove.addEventListener('click', () => { if (!(controller.running || summaryBusy) && !isConnecting()) { clearImage(); syncControls(); } });
 stopButton.addEventListener('click', () => controller.stop());
+async function updateParticipantModes(ids, mode, { explicit = false } = {}) {
+  if (!ids.length) return;
+  modeUpdates++;
+  syncControls();
+  window.dispatchEvent(new Event('roundtable-summary-state'));
+  try {
+    for (const id of ids) {
+      if (!meetingActive || !providerAvailable(id)) continue;
+      try {
+        if (explicit) await controller.ensureRole(id, language.value);
+        await controller.syncMode(id, mode, { explicit });
+        providerStatus(id, 'success', VaultI18n.t('message_018', {0:targets[id].conversationUrl}));
+      } catch (error) {
+        providerStatus(id, 'error', error.message);
+        setStatus('error', error.message, { inLog: false });
+      }
+    }
+  } finally {
+    modeUpdates--;
+    syncControls();
+    automaticInvitations?.schedule();
+    window.dispatchEvent(new Event('roundtable-summary-state'));
+  }
+}
+meetingMode.addEventListener('change', () => {
+  if (!meetingMode.disabled) {
+    void updateParticipantModes(Object.keys(providers).filter(providerAvailable), currentMode(), { explicit: true });
+  }
+});
 language.addEventListener('change', () => controller.setLanguage(language.value));
 input.addEventListener('compositionstart', () => { composing = true; });
 input.addEventListener('compositionend', () => { composing = false; });
@@ -703,6 +910,7 @@ function clearInvitationIssue(id){
   const card=cards[id];card.autoIssue=false;
   card.picker.hidden=true;card.recovery.hidden=true;card.allow.hidden=true;card.roleRetry.hidden=true;
   card.roleTarget=null;card.pendingTabId=null;
+  card.clearDraft?.element.remove(); card.clearDraft=null;
   providerStatus(id,'ready',VaultI18n.t('message_088'));
   if(status.dataset.state==='error'&&status.textContent.startsWith(providers[id].name+':')){
     setStatus('ready','',{inLog:false});

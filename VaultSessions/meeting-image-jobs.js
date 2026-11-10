@@ -37,6 +37,17 @@
           if(event.disconnected)delete targets[event.task.provider];
           else providerStatus(event.task.provider,'success',VaultI18n.t('message_048'));
         }
+      }else if(event.type==='text-complete'){
+        delete row.entry.dataset.type;
+        delete row.entry.dataset.imageTask;
+        row.entry.dataset.state='complete';
+        renderResponse(row.body,event.text,event.richText);
+        row.meta.dataset.i18n='message_058';
+        row.meta.textContent=VaultI18n.t('message_058');
+        if(targets[event.task.provider]?.tabId===event.task.tabId){
+          providerStatus(event.task.provider,'success',VaultI18n.t('message_048'));
+        }
+        rows.delete(event.task.requestId);
       }else if(event.type==='complete'){
         render(row,event.task,'complete',event.images);
         imageRelays?.enqueue(event.task,event.images,targets);
@@ -46,7 +57,17 @@
       }else if(event.type==='error'){
         render(row,{...event.task,error:event.error},'error');
         providerStatus(event.task.provider,'error',VaultI18n.t('imageJobFailed'));
-      }else render(row,event.task,event.task.failed?'error':'waiting');
+      }else{
+        render(row,event.task,event.task.failed?'error':'waiting');
+        if(!event.task.failed && targets[event.task.provider]?.tabId===event.task.tabId){
+          providerStatus(event.task.provider,'sending',VaultI18n.t('imageJobGenerating'));
+        }
+      }
+      const provider = event.task.provider;
+      if (!imageJobs.isBusy(provider) && status.dataset.state === 'error' &&
+          status.textContent === VaultI18n.t('imageJobBusy',{name:providers[provider].name})) {
+        setStatus('ready',VaultI18n.t('message_048'),{inLog:false});
+      }
       renderParticipants();automaticInvitations?.schedule();
     }
   });

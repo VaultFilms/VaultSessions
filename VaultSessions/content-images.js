@@ -31,6 +31,11 @@
       if (menu) menu.click();
       input = await wait(() => [...document.querySelectorAll('input[type=file]')].find(x => !x.disabled && /image\//i.test(x.accept) && (files.length === 1 || x.multiple)), 3000);
     }
+    if (!input && provider === 'grok') {
+      const candidates = [...document.querySelectorAll('input[type="file"]')].filter(field =>
+        !field.disabled && !field.capture && (!field.accept || /image\//i.test(field.accept)) && (files.length === 1 || field.multiple));
+      if (candidates.length === 1) input = candidates[0];
+    }
     if (!input && provider === 'claude') input = document.querySelector('input[data-testid="file-upload"],input#chat-input-file-upload-bottom');
     if (!input || input.disabled || (files.length > 1 && !input.multiple)) throw new Error('画像のファイル選択欄が見つかりません。添付メニュー・サイトの利用制限・DOM変更を確認してください。文章はまだ送信していません。');
     const before = new Set([...area.querySelectorAll('img')].map(x => x.getAttribute('src')));

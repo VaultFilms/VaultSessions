@@ -15,7 +15,7 @@
     };
   }
 
-  const AI_HOSTS = ['chatgpt.com','chat.openai.com','gemini.google.com','claude.ai'];
+  const AI_HOSTS = ['chatgpt.com','chat.openai.com','gemini.google.com','claude.ai','grok.com'];
   function allowed(url) {
     try { const parsed=new URL(url);return ['http:','https:'].includes(parsed.protocol)&&!AI_HOSTS.some(host=>parsed.hostname===host||parsed.hostname.endsWith('.'+host)); } catch { return false; }
   }

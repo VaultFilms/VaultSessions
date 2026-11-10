@@ -1,10 +1,10 @@
 'use strict';
 (function(root) {
-  const aliases={gpt:'chatgpt',chatgpt:'chatgpt',gemini:'gemini',claude:'claude'};
-  const names={chatgpt:'ChatGPT',gemini:'Gemini',claude:'Claude'};
+  const aliases={gpt:'chatgpt',chatgpt:'chatgpt',gemini:'gemini',claude:'claude',grok:'grok'};
+  const names={chatgpt:'ChatGPT',gemini:'Gemini',claude:'Claude',grok:'Grok'};
   function mention(text) {
     // Recognize @ mentions anywhere; do not match To inside another English word.
-    const match=/(?:@(ChatGPT|GPT|Gemini|Claude)|(?:^|[^A-Za-z0-9_])To\s+(ChatGPT|GPT|Gemini|Claude))(?![A-Za-z0-9_])/i.exec(text);
+    const match=/(?:@(ChatGPT|GPT|Gemini|Claude|Grok)|(?:^|[^A-Za-z0-9_])To\s+(ChatGPT|GPT|Gemini|Claude|Grok))(?![A-Za-z0-9_])/i.exec(text);
     return match ? aliases[(match[1]||match[2]).toLowerCase()] : null;
   }
   function choose(text, connected, random=Math.random) {

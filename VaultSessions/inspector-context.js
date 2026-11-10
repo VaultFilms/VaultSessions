@@ -4,7 +4,7 @@ globalThis.VaultInspectorContext = Object.freeze({
   version: '2',
   text: `VaultSessions Inspector Context — version 2
 
-VaultSessions is an open-source text meeting application. It connects human participants and their signed-in official ChatGPT, Gemini, and Claude web chats through a Chrome extension. It uses browser DOM input, send controls, and reply extraction rather than AI APIs. Existing personalities, personalization, and independent official chat sessions remain in use. Dev mode supports development discussions about VaultSessions or other applications and prepares handoffs to Codex or Claude Code; it does not execute proposed repairs.
+VaultSessions is an open-source text meeting application. It connects human participants and their signed-in official ChatGPT, Gemini, Claude, and Grok web chats through a Chrome extension. It uses browser DOM input, send controls, and reply extraction rather than AI APIs. Existing personalities, personalization, and independent official chat sessions remain in use. Debate mode supports development discussions about VaultSessions or other applications and prepares handoffs to Codex or Claude Code; it does not execute proposed repairs.
 
 Inspector reads the selected official AI tab. Reports include the selectors actually used by its adapter, match counts, visibility and disabled states, nearby DOM serialized as unformatted HTML, and the adapter's current phase. Message text, input values, links, image sources, and unrelated page content are removed. Reports can be incomplete or truncated. They are observations at a particular time, not proof of a cause.
 

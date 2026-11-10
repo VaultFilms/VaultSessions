@@ -30,21 +30,25 @@
   <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
-**Aplikasi rapat sumber terbuka tempat manusia dan asisten AI pribadi mereka — ChatGPT, Gemini, dan Claude — dapat berpikir dan berkolaborasi bersama dengan memanfaatkan personalisasi yang sudah ada.**
+**Aplikasi rapat sumber terbuka tempat manusia dan asisten AI pribadi mereka — ChatGPT, Gemini, Claude, dan Grok — dapat berpikir dan berkolaborasi bersama dengan memanfaatkan personalisasi yang sudah ada.**
+
+Pilih **Chat** atau **Debate** di pengaturan rapat. Debate (sebelumnya Dev) meminta AI menguji asumsi dan menawarkan sudut pandang lain sambil mempertahankan personalisasi. Grok diuji dengan akun gratis. Jika mencapai batas penggunaan, lanjutkan ke AI berikutnya bila pilihan itu tersedia. Grok dapat menerima lampiran gambar. Gambar yang dihasilkan Grok tidak dideteksi atau diteruskan otomatis.
 
 ## Fitur
 
-- **Bawa kepribadian AI Anda sendiri.** Hubungkan chat web resmi yang biasa Anda gunakan, beserta percakapan dan personalisasi yang sudah ada. Tidak memerlukan kunci API AI.
-- **Diskusi kelompok yang alami.** AI yang terhubung berbicara bergiliran, memberi sudut pandang baru, dan melewati giliran jika tidak ada tambahan. Jika hanya satu AI terhubung, AI tersebut menjawab sekali.
-- **Pilih penjawab pertama secara alami.** Gunakan `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, atau `To Gemini`. Tanpa penunjukan, penjawab pertama dipilih secara acak.
-- **Bagikan konteks visual.** Lampirkan atau tempel hingga empat gambar dan diskusikan berdasarkan nomornya.
-- **Tetap mengobrol saat ChatGPT atau Gemini membuat gambar.** Saat pembuatan gambar bawaan terdeteksi, AI yang membuat gambar sementara tidak dapat digunakan dan Anda dapat berbicara dengan AI lain yang terhubung. Pratinjau yang selesai muncul bersama permintaan awal tanpa memulai putaran diskusi baru. VS menampilkan pratinjau terkompresi; gambar asli tersedia di chat resmi. Kegagalan pembuatan atau pengambilan dan batas waktu ditampilkan di log; AI kembali otomatis setelah chat resminya siap. Biarkan tab resmi terbuka; kemajuan di latar belakang bergantung pada penyedia dan browser. Kode dan berkas SVG dari Claude juga didukung: VS menghapus skrip dan referensi eksternal lalu mengubahnya menjadi pratinjau raster.
-- **Bagikan halaman saat ini.** Jika diinginkan, sertakan teks halaman yang dapat dibaca sebagai bahan referensi rapat.
-- **Ringkas dan salin.** Buat ringkasan untuk ditinjau kembali atau dipakai dalam rapat berikutnya.
-- **Panel samping dan tampilan diperluas.** Beralih tata letak, sembunyikan kontrol peserta, dan sesuaikan ukuran teks log.
-- **Sembilan bahasa antarmuka.** Inggris, Jepang, Prancis (Prancis), Jerman (Jerman), Spanyol (Amerika Serikat), Italia, Indonesia, Portugis (Brasil), dan Hindi. Pilihan awal mengikuti preferensi browser, dengan bahasa Inggris sebagai cadangan; pilihan manual disimpan. Mode gelap mengikuti preferensi browser atau sistem.
+- Hubungkan ChatGPT, Gemini, Claude, atau Grok dengan akun yang biasa Anda pakai.
+- Kirim satu topik agar AI yang terhubung menjawab bergiliran. Gunakan `@Grok` atau nama AI lain untuk memilih siapa yang menjawab pertama.
 
-VaultSessions adalah bukti konsep antarmuka rapat yang mempertemukan konteks dan kepribadian AI yang berbeda dengan perspektif manusia. Proyek ini tidak berafiliasi dengan atau didukung oleh OpenAI, Google, maupun Anthropic.
+**[Instal VaultSessions](#instalasi)**
+
+> [!IMPORTANT]
+> **Gunakan jendela Chrome terpisah untuk VaultSessions dan obrolan AI resmi.**
+>
+> Buka VaultSessions sebagai panel samping atau halaman rapat di satu jendela, lalu letakkan tab AI resmi di jendela lain. VaultSessions mengaktifkan tab AI untuk mengirim pesan dan mengambil jawaban. Dalam satu jendela, perpindahan tab dapat menyembunyikan rapat atau mengganti halaman di sebelah panel samping.
+>
+> Perkecil jendela AI dan letakkan di sudut layar. Biarkan jendela VaultSessions cukup besar untuk mengikuti rapat.
+
+![Jendela VaultSessions yang besar dan jendela AI yang lebih kecil di sudut kanan bawah.](separate-chrome-windows.svg)
 
 ## Instalasi
 
@@ -68,7 +72,7 @@ VaultSessions/
 1. Unduh atau klon repositori ini ke folder yang akan Anda simpan secara permanen.
 2. Buka `chrome://extensions/` dan aktifkan **Mode developer**.
 3. Klik **Muat yang belum dipaketkan** lalu pilih folder bagian dalam **`VaultSessions/`** yang berisi `manifest.json`, bukan folder akar repositori.
-4. Buka situs resmi ChatGPT, Gemini, dan/atau Claude, lalu masuk sendiri ke akun Anda.
+4. Buka situs resmi ChatGPT, Gemini, Claude, atau Grok, lalu masuk sendiri ke akun Anda.
 5. Klik ikon ekstensi VaultSessions pada tab tempat Anda ingin menampilkan panel rapat.
 
 Gunakan Chrome versi terbaru. Versi minimum dalam manifest adalah Chrome 116, tetapi kompatibilitas API browser dan antarmuka penyedia dapat berbeda. Rapat biasa tidak memerlukan proses build atau server.
@@ -90,10 +94,10 @@ Jika folder dipindahkan, buka dan daftarkan ulang `meeting.html` di lokasi baru.
 
 Beberapa panel AI di browser tidak dapat berinteraksi dengan halaman `file://`. Untuk integrasi tersebut, instal Python 3 dan jalankan server loopback opsional:
 
-| Platform | Peluncur | Alternatif terminal, dari folder bagian dalam `VaultSessions/` |
-| --- | --- | --- |
-| macOS | Klik dua kali `VaultSessions/start.command` | `python3 serve.py` |
-| Windows | Klik dua kali `VaultSessions/start.bat` | `py -3 serve.py` atau `python serve.py` |
+| Platform | Peluncur                                    | Alternatif terminal, dari folder bagian dalam `VaultSessions/` |
+| -------- | ------------------------------------------- | -------------------------------------------------------------- |
+| macOS    | Klik dua kali `VaultSessions/start.command` | `python3 serve.py`                                             |
+| Windows  | Klik dua kali `VaultSessions/start.bat`     | `py -3 serve.py` atau `python serve.py`                        |
 
 Jika peluncur macOS kehilangan izin eksekusi, gunakan `chmod +x start.command` atau perintah terminal di atas. Biarkan jendela terminal terbuka; Ctrl+C menghentikan server. Port 8766 harus tersedia.
 
@@ -126,6 +130,23 @@ VaultSessions meneruskan gambar ke tab AI resmi di dalam browser, tanpa server p
 Menu header menyembunyikan kontrol peserta dan pengaturan. **A−**, **A＋**, dan **Ukuran standar** mengubah ukuran teks log, termasuk ringkasan, dari 75% hingga 175%. Pengaturan ini dibagikan antartata letak dan tetap tersimpan setelah browser dimulai ulang.
 
 Snapshot sementara menggunakan `chrome.storage.session`, dengan hingga 500 entri tampilan dan 500 entri riwayat biasa per penyimpanan. Tampilan aktif dapat memuat lebih banyak. Ini bukan arsip permanen. Bahasa, ukuran teks, preferensi berbagi halaman, dan URL file terdaftar memakai penyimpanan lokal browser. Gambar yang dipilih tetapi belum dikirim tidak dipertahankan saat beralih tampilan.
+
+<details>
+<summary>Rincian fitur lainnya</summary>
+
+- **Bawa kepribadian AI Anda sendiri.** Hubungkan chat web resmi yang biasa Anda gunakan, beserta percakapan dan personalisasi yang sudah ada. Tidak memerlukan kunci API AI.
+- **Diskusi kelompok yang alami.** AI yang terhubung berbicara bergiliran, memberi sudut pandang baru, dan melewati giliran jika tidak ada tambahan. Jika hanya satu AI terhubung, AI tersebut menjawab sekali.
+- **Pilih penjawab pertama secara alami.** Gunakan `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, `@Grok`, atau `To Gemini`. Tanpa penunjukan, penjawab pertama dipilih secara acak.
+- **Bagikan konteks visual.** Lampirkan atau tempel hingga empat gambar dan diskusikan berdasarkan nomornya.
+- **Tetap mengobrol saat ChatGPT atau Gemini membuat gambar.** Saat pembuatan gambar bawaan terdeteksi, AI yang membuat gambar sementara tidak dapat digunakan dan Anda dapat berbicara dengan AI lain yang terhubung. Pratinjau yang selesai muncul bersama permintaan awal tanpa memulai putaran diskusi baru. VS menampilkan pratinjau terkompresi; gambar asli tersedia di chat resmi. Kegagalan pembuatan atau pengambilan dan batas waktu ditampilkan di log; AI kembali otomatis setelah chat resminya siap. Biarkan tab resmi terbuka; kemajuan di latar belakang bergantung pada penyedia dan browser. Kode dan berkas SVG dari Claude juga didukung: VS menghapus skrip dan referensi eksternal lalu mengubahnya menjadi pratinjau raster.
+- **Bagikan halaman saat ini.** Jika diinginkan, sertakan teks halaman yang dapat dibaca sebagai bahan referensi rapat.
+- **Ringkas dan salin.** Buat ringkasan untuk ditinjau kembali atau dipakai dalam rapat berikutnya.
+- **Panel samping dan tampilan diperluas.** Beralih tata letak, sembunyikan kontrol peserta, dan sesuaikan ukuran teks log.
+- **Sembilan bahasa antarmuka.** Inggris, Jepang, Prancis (Prancis), Jerman (Jerman), Spanyol (Amerika Serikat), Italia, Indonesia, Portugis (Brasil), dan Hindi. Pilihan awal mengikuti preferensi browser, dengan bahasa Inggris sebagai cadangan; pilihan manual disimpan. Mode gelap mengikuti preferensi browser atau sistem.
+
+</details>
+
+VaultSessions adalah bukti konsep antarmuka rapat yang mempertemukan konteks dan kepribadian AI yang berbeda dengan perspektif manusia. Proyek ini tidak berafiliasi dengan atau didukung oleh OpenAI, Google, maupun Anthropic.
 
 ### Privasi, izin, dan kompatibilitas
 

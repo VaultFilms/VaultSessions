@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const canSend=id=>meetingActive&&!meetingRestoring&&!viewSwitching&&!summaryBusy&&!connecting.has(id)&&!pendingDepartures.has(id)&&!providerExchanges.has(id)&&!imageJobs?.isBusy(id);
+  const canSend=id=>meetingActive&&!meetingRestoring&&!viewSwitching&&!summaryBusy&&!connecting.has(id)&&!pendingDepartures.has(id)&&!waitingOnSkippedReply(id)&&!providerExchanges.has(id)&&!imageJobs?.isBusy(id);
   imageRelays=new RoundtableImageRelays.Queue({
     getTarget:id=>targets[id],
     canProcess:()=>meetingActive&&!meetingRestoring&&!viewSwitching,

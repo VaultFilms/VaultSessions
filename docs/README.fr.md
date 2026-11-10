@@ -30,21 +30,25 @@
   <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
-**Une application de réunion open source où les humains et leurs assistants IA personnels — ChatGPT, Gemini et Claude — peuvent réfléchir et collaborer ensemble, en conservant leur personnalisation existante.**
+**Une application de réunion open source où les humains et leurs assistants IA personnels — ChatGPT, Gemini, Claude et Grok — peuvent réfléchir et collaborer ensemble, en conservant leur personnalisation existante.**
+
+Choisissez **Chat** ou **Debate** dans les paramètres de réunion. Debate (anciennement Dev) invite les IA à examiner les hypothèses et à proposer d’autres points de vue tout en conservant leur personnalisation. Grok a été testé avec un compte gratuit. En cas de limite, passez à l’IA suivante si l’option apparaît. Grok reçoit les images jointes. Les images qu’il génère ne sont ni détectées ni relayées automatiquement.
 
 ## Fonctionnalités
 
-- **Retrouvez la personnalité de vos IA habituelles.** Connectez les chats Web officiels que vous utilisez déjà, avec leurs conversations et leur personnalisation existantes. Aucune clé d’API IA n’est nécessaire.
-- **Des discussions de groupe naturelles.** Les IA connectées interviennent à tour de rôle, apportent de nouveaux points de vue et passent leur tour lorsqu’elles n’ont rien à ajouter. Une seule IA connectée donne une seule réponse.
-- **Désignez naturellement le premier intervenant.** Utilisez `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude` ou `To Gemini`. Sans indication, le premier intervenant est choisi au hasard.
-- **Partagez un contexte visuel.** Joignez ou collez jusqu’à quatre images et discutez-en en utilisant leurs numéros.
-- **Continuez à discuter pendant que ChatGPT ou Gemini génère des images.** Lorsque la génération native est détectée, l’IA qui génère devient temporairement indisponible et vous pouvez parler aux autres IA connectées. Les aperçus terminés apparaissent avec la demande initiale, sans relancer la discussion. VS fournit des aperçus compressés ; consultez le chat officiel pour les originaux. Les échecs de génération ou de récupération et les délais dépassés apparaissent dans le journal ; l’IA revient automatiquement lorsque son chat est prêt. Gardez l’onglet officiel ouvert ; la progression en arrière-plan dépend du fournisseur et du navigateur. Les codes et fichiers SVG de Claude sont également pris en charge : VS supprime les scripts et références externes, puis crée un aperçu matriciel.
-- **Partagez la page actuelle.** Fournissez, si vous le souhaitez, le texte lisible d’une page comme document de référence.
-- **Résumez et copiez.** Générez un résumé pour relire la discussion ou préparer une prochaine réunion.
-- **Panneau latéral et vue agrandie.** Changez de présentation, masquez les commandes des participants et ajustez la taille du texte du journal.
-- **Neuf langues d’interface.** Anglais, japonais, français (France), allemand (Allemagne), espagnol (États-Unis), italien, indonésien, portugais (Brésil) et hindi. La sélection initiale suit les préférences du navigateur, avec l’anglais comme solution de repli ; les choix manuels sont mémorisés. Le mode sombre suit les préférences du navigateur ou du système.
+- Connectez ChatGPT, Gemini, Claude ou Grok avec vos comptes habituels.
+- Envoyez un sujet pour que les IA répondent à tour de rôle. Utilisez `@Grok` ou le nom d’une autre IA pour choisir qui répond en premier.
 
-VaultSessions est une preuve de concept d’interface de réunion réunissant différents contextes et personnalités d’IA ainsi que des points de vue humains. Le projet n’est ni affilié à OpenAI, Google ou Anthropic, ni approuvé par ces entreprises.
+**[Installer VaultSessions](#installation)**
+
+> [!IMPORTANT]
+> **Utilisez des fenêtres Chrome séparées pour VaultSessions et les chats IA officiels.**
+>
+> Ouvrez VaultSessions dans une fenêtre, en panneau latéral ou en page de réunion, et les onglets IA officiels dans une autre. VaultSessions active l’onglet IA pour envoyer les messages et recueillir les réponses. Dans une seule fenêtre, ce changement peut masquer la réunion ou remplacer la page à côté du panneau latéral.
+>
+> Réduisez la taille de la fenêtre des IA et placez-la dans un coin de l’écran. Gardez la fenêtre VaultSessions assez grande pour suivre la réunion.
+
+![Une grande fenêtre VaultSessions et une petite fenêtre pour les IA en bas à droite.](separate-chrome-windows.svg)
 
 ## Installation
 
@@ -68,7 +72,7 @@ VaultSessions/
 1. Téléchargez ou clonez ce dépôt dans un dossier que vous conserverez.
 2. Ouvrez `chrome://extensions/` et activez le **mode développeur**.
 3. Cliquez sur **Charger l’extension non empaquetée** et sélectionnez le dossier intérieur **`VaultSessions/`** contenant `manifest.json`, et non la racine du dépôt.
-4. Ouvrez les sites officiels de ChatGPT, Gemini et/ou Claude, puis connectez-vous vous-même.
+4. Ouvrez les sites officiels de ChatGPT, Gemini, Claude ou Grok, puis connectez-vous vous-même.
 5. Cliquez sur l’icône de l’extension VaultSessions dans l’onglet où vous souhaitez afficher le panneau de réunion.
 
 Utilisez une version récente de Chrome. Le minimum déclaré dans le manifeste est Chrome 116, mais la compatibilité des API du navigateur et des interfaces des fournisseurs peut varier. Les réunions ordinaires ne nécessitent ni compilation ni serveur.
@@ -90,10 +94,10 @@ Si vous déplacez le dossier, ouvrez et enregistrez de nouveau le fichier `meeti
 
 Certains panneaux IA de navigateur ne peuvent pas agir sur les pages `file://`. Pour ces intégrations, installez Python 3 et démarrez le serveur local facultatif, limité à l’interface de bouclage :
 
-| Plateforme | Lanceur | Commande à exécuter depuis le dossier intérieur `VaultSessions/` |
-| --- | --- | --- |
-| macOS | Double-cliquez sur `VaultSessions/start.command` | `python3 serve.py` |
-| Windows | Double-cliquez sur `VaultSessions/start.bat` | `py -3 serve.py` ou `python serve.py` |
+| Plateforme | Lanceur                                          | Commande à exécuter depuis le dossier intérieur `VaultSessions/` |
+| ---------- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| macOS      | Double-cliquez sur `VaultSessions/start.command` | `python3 serve.py`                                               |
+| Windows    | Double-cliquez sur `VaultSessions/start.bat`     | `py -3 serve.py` ou `python serve.py`                            |
 
 Si le lanceur macOS a perdu son autorisation d’exécution, utilisez `chmod +x start.command` ou la commande de terminal ci-dessus. Gardez la fenêtre du terminal ouverte ; Ctrl+C arrête le serveur. Le port 8766 doit être libre.
 
@@ -126,6 +130,23 @@ VaultSessions transmet les images à l’onglet officiel de l’IA à l’intér
 Le menu d’en-tête masque les commandes des participants et des paramètres. **A−**, **A＋** et **Taille par défaut** ajustent le texte du journal, résumés compris, entre 75 % et 175 %. Ce réglage est partagé entre les présentations et conservé après le redémarrage du navigateur.
 
 Les instantanés temporaires utilisent `chrome.storage.session`, avec jusqu’à 500 entrées affichées et 500 entrées d’historique ordinaire par sauvegarde. La vue active peut en contenir davantage. Ce stockage n’est pas une archive durable. La langue, la taille du texte, le partage de page et l’URL du fichier enregistré utilisent le stockage local du navigateur. Les images sélectionnées mais non envoyées ne sont pas conservées lors d’un changement de vue.
+
+<details>
+<summary>En savoir plus sur les fonctionnalités</summary>
+
+- **Retrouvez la personnalité de vos IA habituelles.** Connectez les chats Web officiels que vous utilisez déjà, avec leurs conversations et leur personnalisation existantes. Aucune clé d’API IA n’est nécessaire.
+- **Des discussions de groupe naturelles.** Les IA connectées interviennent à tour de rôle, apportent de nouveaux points de vue et passent leur tour lorsqu’elles n’ont rien à ajouter. Une seule IA connectée donne une seule réponse.
+- **Désignez naturellement le premier intervenant.** Utilisez `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, `@Grok` ou `To Gemini`. Sans indication, le premier intervenant est choisi au hasard.
+- **Partagez un contexte visuel.** Joignez ou collez jusqu’à quatre images et discutez-en en utilisant leurs numéros.
+- **Continuez à discuter pendant que ChatGPT ou Gemini génère des images.** Lorsque la génération native est détectée, l’IA qui génère devient temporairement indisponible et vous pouvez parler aux autres IA connectées. Les aperçus terminés apparaissent avec la demande initiale, sans relancer la discussion. VS fournit des aperçus compressés ; consultez le chat officiel pour les originaux. Les échecs de génération ou de récupération et les délais dépassés apparaissent dans le journal ; l’IA revient automatiquement lorsque son chat est prêt. Gardez l’onglet officiel ouvert ; la progression en arrière-plan dépend du fournisseur et du navigateur. Les codes et fichiers SVG de Claude sont également pris en charge : VS supprime les scripts et références externes, puis crée un aperçu matriciel.
+- **Partagez la page actuelle.** Fournissez, si vous le souhaitez, le texte lisible d’une page comme document de référence.
+- **Résumez et copiez.** Générez un résumé pour relire la discussion ou préparer une prochaine réunion.
+- **Panneau latéral et vue agrandie.** Changez de présentation, masquez les commandes des participants et ajustez la taille du texte du journal.
+- **Neuf langues d’interface.** Anglais, japonais, français (France), allemand (Allemagne), espagnol (États-Unis), italien, indonésien, portugais (Brésil) et hindi. La sélection initiale suit les préférences du navigateur, avec l’anglais comme solution de repli ; les choix manuels sont mémorisés. Le mode sombre suit les préférences du navigateur ou du système.
+
+</details>
+
+VaultSessions est une preuve de concept d’interface de réunion réunissant différents contextes et personnalités d’IA ainsi que des points de vue humains. Le projet n’est ni affilié à OpenAI, Google ou Anthropic, ni approuvé par ces entreprises.
 
 ### Confidentialité, autorisations et compatibilité
 

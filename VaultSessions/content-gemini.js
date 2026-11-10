@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.5';
+  const VERSION = '0.9.6';
   // DOM verified on the signed-in Gemini website on 2026-10-29.
   const EDITORS = ['.ql-editor[contenteditable="true"][role="textbox"]'];
   const SEND = "button.send-button, button[aria-label=\"プロンプトを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -81,6 +81,10 @@
     const expectedIndex = previousUserTexts.length;
     let missingSince = null;
     let relayReadySince=null;
+    let silentReadySince = null;
+    const allowsNoReply = silent && (/^\[switch to (chat|debate)\]$/.test(prompt)
+      || (prompt.startsWith('You are participating in a group discussion\n') && prompt.includes('Debate persona:')));
+    let fallbackReadySince = null;
     let imageReadySince = null, imageSignature = '';
     const homePath = value => /^\/(?:u\/\d+\/)?app\/?$/.test(value) || value === '/';
     const savedPath = value => /^\/(?:u\/\d+\/)?app\/[^/]+\/?$/.test(value);
@@ -127,7 +131,20 @@
           const completed = reply?.getAttribute('aria-busy') === 'false' && visible(copy) && !copy.disabled;
           const signature = imageState.images.map(img => `${img.currentSrc || img.src}:${img.naturalWidth}:${img.naturalHeight}`).join('|');
           if (signature !== imageSignature) { imageSignature = signature; imageReadySince = null; }
-          if (reply) job.text = bodyText(reply);
+          const text = reply ? bodyText(reply) : '';
+          if (text !== job.text) fallbackReadySince = null;
+          job.text = text;
+          // Gemini can remove the image placeholder and finish the same turn as text.
+          if (!imageState.markers.length && text && completed && !generating() && savedPath(path)) {
+            fallbackReadySince ??= Date.now();
+            if (Date.now() - fallbackReadySince >= 1200) {
+              delete job.kind;
+              job.imageFallback = true;
+              job.richText = globalThis.RoundtableRichText?.captureReply(reply,'gemini') || null;
+              endJob('complete');
+              return;
+            }
+          } else fallbackReadySince = null;
           const failed = imageState.markers.some(node => [...node.querySelectorAll('[role="alert"], [data-error="true"]')].some(visible));
           if (failed) { endJob('error', 'Image generation failed. Check the official chat.'); return; }
           if (imageState.images.length && !imageState.loading && completed && !generating() && savedPath(path)) {
@@ -168,6 +185,16 @@
           endJob('complete'); return;
         }
       }
+      if (allowsNoReply && !job.text && savedPath(path) && !generating()) {
+        const editor = findEditor();
+        const scope = currentTurn;
+        const hasError = [...(scope?.querySelectorAll?.('[role="alert"], [data-error="true"]') || [])].some(visible);
+        if (editor && !editor.disabled && editor.getAttribute('aria-disabled') !== 'true'
+            && !editor.closest('[aria-busy="true"]') && !normalize(read(editor)) && !hasError) {
+          silentReadySince ??= Date.now();
+          if (Date.now() - silentReadySince >= 2000) { endJob('complete'); return; }
+        } else silentReadySince = null;
+      } else silentReadySince = null;
       if (Date.now() - started > 180000) {
         endJob('error', '回答の完了を3分以内に確認できませんでした。途中の文章は表示しています。再送前にGemini側を確認してください。');
       }
@@ -186,7 +213,7 @@
   }
 
   async function send(text, requestId, foreground, silent, images = [], contextOnly = false, imageRelay = false) {
-    if (busy) throw new Error("このGeminiタブで送信処理中です。");
+    if (busy) throw Object.assign(new Error("このGeminiタブで送信処理中です。"), { code: "PROVIDER_BUSY" });
     if (typeof text !== "string" || !text.trim() || text.length > 75000) throw Error("The outgoing message is empty or exceeds 75,000 characters.");
     const receipt = silent && !contextOnly && !imageRelay ? null : `VSREQUEST${crypto.randomUUID().replace(/-/g, '')}END`;
     if (receipt) text = `${receipt}\nThis is a delivery identifier, not discussion content. Do not repeat it.\n\n${text}`;
@@ -197,7 +224,7 @@
     let watching = false;
     try {
       if (foreground && !await waitFor(() => !document.hidden, 5000)) throw new Error('Geminiのタブが表示されていません。Geminiを表示してから送信してください。文章はまだ送信していません。');
-      if (generating()) throw new Error("Geminiが応答中です。完了してから送信してください。");
+      if (generating()) throw Object.assign(new Error("Geminiが応答中です。完了してから送信してください。"), { code: "PROVIDER_BUSY" });
       const editor = await waitFor(findEditor, 5000);
       if (!editor) throw new Error("Geminiの入力欄が見つかりません。ログイン、通常のチャット画面、読み込み完了を確認してください。DOM変更の可能性もあります。");
       if (editor.disabled || editor.getAttribute("aria-disabled") === "true") throw new Error("Geminiの入力欄が無効です。");
@@ -250,7 +277,7 @@
     } catch (error) {
       job.phase = 'error';
       job.error = error.message;
-      return { ok: false, uncertain: clicked, error: error.message };
+      return { ok: false, uncertain: clicked, error: error.message, code: error.code };
     } finally {
       if (!watching) busy = false;
     }
@@ -305,7 +332,7 @@
       return;
     }
     if (message?.type !== "ROUNDTABLE_GEMINI_SEND") return;
-    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
+    send(message.text, message.requestId, message.foreground, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message, code: error.code }));
     return true;
   });
 })();

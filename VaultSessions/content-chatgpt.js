@@ -1,7 +1,8 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.6';
+  const VERSION = '0.9.7';
+  let blockedDraft;
   // ProseMirror and the Japanese send label were verified in normal Chat UI on 2026-10-29.
   // English labels, #prompt-textarea, and data-testid are compatibility candidates not verified in that session.
   // Message bodies, IDs, and turn states were verified in the current UI; retain legacy fallbacks.
@@ -243,7 +244,7 @@
   }
 
   async function send(text, requestId, silent, images = [], contextOnly = false, imageRelay = false) {
-    if (busy) throw new Error("このChatGPTタブで送信処理中です。");
+    if (busy) throw Object.assign(new Error("このChatGPTタブで送信処理中です。"), { code: "PROVIDER_BUSY" });
     if (typeof text !== "string" || !text.trim() || text.length > 75000) throw Error("The outgoing message is empty or exceeds 75,000 characters.");
     // Keep role recovery compatible; add a one-time receipt only to normal messages.
     if(!silent||contextOnly||imageRelay)text='VSREQUEST'+crypto.randomUUID().replace(/-/g,'')+'END\nDelivery reference only; do not repeat it.\n\n'+text;
@@ -253,7 +254,7 @@
     let clicked = false;
     let watching = false;
     try {
-      if (generating()) throw new Error("ChatGPTが応答中です。完了してから送信してください。");
+      if (generating()) throw Object.assign(new Error("ChatGPTが応答中です。完了してから送信してください。"), { code: "PROVIDER_BUSY" });
       let editor = await waitFor(findEditor, 5000);
       if (!editor) throw new Error("ChatGPTの入力欄が見つかりません。ログイン、通常のChatモード、画面の読み込みを確認してください。DOM変更の可能性もあります。");
       // React may replace the editor during rendering. Reacquire it before reporting a draft.
@@ -263,7 +264,8 @@
         if (!editor) throw new Error("ChatGPTの入力欄が再描画中です。もう一度実行してください。");
         if (draftText(editor)) {
           console.warn('[VaultSessions draft-check]', JSON.stringify({version:VERSION,requestId,at:new Date().toISOString(),tag:editor.tagName,connected:editor.isConnected,visible:visible(editor),rawLength:read(editor).length,draftLength:draftText(editor).length,placeholderNodes:editor.querySelectorAll('[data-placeholder], [data-slate-placeholder]').length,editors:EDITORS.flatMap(selector=>[...document.querySelectorAll(selector)]).length}));
-          throw new Error("ChatGPTに下書きがあります。下書きを送信または削除してから実行してください。");
+          blockedDraft = { requestId, editor, text: read(editor), href: location.href };
+          throw Object.assign(new Error("ChatGPTに下書きがあります。下書きを送信または削除してから実行してください。"), { code: "COMPOSER_DRAFT", draftToken: requestId });
         }
       }
       if (editor.disabled || editor.getAttribute("aria-disabled") === "true") throw new Error("ChatGPTの入力欄が無効です。");
@@ -317,7 +319,7 @@
     } catch (error) {
       job.phase = 'error';
       job.error = error.message;
-      return { ok: false, uncertain: clicked, error: error.message };
+      return { ok: false, uncertain: clicked, error: error.message, draftToken: error.draftToken, ...(error.code ? { code: error.code } : {}) };
     } finally {
       if (!watching) busy = false;
     }
@@ -355,8 +357,42 @@
     return { ok: true, recovered: !!completed, url: location.origin + location.pathname };
   }
 
+  function clearConfirmedDraft(token) {
+    const draft = blockedDraft;
+    const editor = findEditor();
+    if (busy || generating() || !draft || job?.requestId !== token || draft.requestId !== token || draft.href !== location.href
+        || !editor || editor !== draft.editor || editor.disabled || editor.getAttribute('aria-disabled') === 'true'
+        || read(editor) !== draft.text) {
+      throw Error('The ChatGPT draft or conversation changed. Check the official tab and try again.');
+    }
+    RoundtableImageUpload.checkDraft(editor);
+    editor.focus();
+    if (findEditor() !== editor || read(editor) !== draft.text || location.href !== draft.href) {
+      throw Error('The ChatGPT draft changed. Check the official tab and try again.');
+    }
+    if (editor instanceof HTMLTextAreaElement) {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(editor, '');
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      if (!document.execCommand('delete', false)) throw Error('The ChatGPT draft could not be cleared.');
+    }
+    if (draftText(findEditor() || editor)) throw Error('The ChatGPT draft could not be cleared.');
+    blockedDraft = null;
+    return { ok: true };
+  }
+
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
+    if (message?.type === 'ROUNDTABLE_CHATGPT_CLEAR_DRAFT') {
+      try { sendResponse(clearConfirmedDraft(message.draftToken)); }
+      catch (error) { sendResponse({ok:false,error:error.message}); }
+      return;
+    }
     if(message?.type==='ROUNDTABLE_CHATGPT_INSPECT'){
       if(!globalThis.VaultInspectorDOM){sendResponse({ok:false,error:'Reload the official AI tab to enable Inspector.'});return;}
       sendResponse({ok:true,report:VaultInspectorDOM.inspect('chatgpt',{editor:EDITORS,send:SEND,stop:STOP,user:USER_MESSAGE,reply:ASSISTANT,image:'img,canvas'},{phase:job?.phase,kind:job?.kind,busy,generating:generating()})});return;
@@ -388,7 +424,7 @@
       return;
     }
     if (message?.type !== "ROUNDTABLE_CHATGPT_SEND") return;
-    send(message.text, message.requestId, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message }));
+    send(message.text, message.requestId, message.silent === true, message.images, message.contextOnly === true, message.imageRelay === true).then(sendResponse, error => sendResponse({ ok: false, error: error.message, code: error.code }));
     return true;
   });
 })();

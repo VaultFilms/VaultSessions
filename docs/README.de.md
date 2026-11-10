@@ -30,21 +30,25 @@
   <img src="https://visitor-badge.laobi.icu/badge?page_id=VaultFilms.VaultSessions" alt="visitors">
 </p>
 
-**Eine Open-Source-Besprechungs-App, in der Menschen und ihre persönlichen KI-Assistenten — ChatGPT, Gemini und Claude — mit ihrer bestehenden Personalisierung gemeinsam denken und zusammenarbeiten können.**
+**Eine Open-Source-Besprechungs-App, in der Menschen und ihre persönlichen KI-Assistenten — ChatGPT, Gemini, Claude und Grok — mit ihrer bestehenden Personalisierung gemeinsam denken und zusammenarbeiten können.**
+
+Wählen Sie **Chat** oder **Debate** in den Besprechungseinstellungen. Debate (früher Dev) bittet die KI, Annahmen zu prüfen und andere Sichtweisen einzubringen. Die Personalisierung bleibt erhalten. Grok wurde mit einem kostenlosen Konto getestet. Bei einem Nutzungslimit können Sie zur nächsten KI wechseln, sofern die Option angezeigt wird. Grok kann Bildanhänge empfangen. Von Grok erzeugte Bilder werden nicht automatisch erkannt oder weitergeleitet.
 
 ## Funktionen
 
-- **Die Persönlichkeit Ihrer gewohnten KI mitbringen.** Verbinden Sie die offiziellen Webchats, die Sie bereits nutzen, mit ihren bestehenden Unterhaltungen und Personalisierungen. Es werden keine KI-API-Schlüssel benötigt.
-- **Natürliche Gruppendiskussionen.** Verbundene KIs sprechen abwechselnd, bringen neue Perspektiven ein und setzen aus, wenn sie nichts hinzuzufügen haben. Bei nur einer verbundenen KI gibt es eine einzelne Antwort.
-- **Den ersten Antwortenden natürlich bestimmen.** Nutzen Sie `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude` oder `To Gemini`. Ohne Angabe wird die erste KI zufällig gewählt.
-- **Visuellen Kontext teilen.** Hängen Sie bis zu vier Bilder an oder fügen Sie sie ein und besprechen Sie sie anhand ihrer Nummern.
-- **Während der Bilderstellung mit anderen KIs sprechen.** Sobald die native Bilderstellung erkannt wird, ist die erzeugende KI (ChatGPT oder Gemini) vorübergehend nicht verfügbar. Mit den anderen verbundenen KIs können Sie weiterreden. Fertige Vorschauen erscheinen bei der ursprünglichen Anfrage und starten keine neue Diskussionsrunde. VS zeigt komprimierte Vorschauen; Originale finden Sie im offiziellen Chat. Fehler bei Erstellung oder Abruf sowie Zeitüberschreitungen erscheinen im Protokoll. Die KI kehrt automatisch zurück, sobald ihr Chat bereit ist. Lassen Sie den offiziellen Tab geöffnet; der Fortschritt im Hintergrund hängt vom Anbieter und Browser ab. Auch SVG-Code und SVG-Dateien von Claude werden unterstützt: VS entfernt Skripte und externe Verweise und erstellt eine Rastervorschau.
-- **Die aktuelle Seite teilen.** Stellen Sie bei Bedarf lesbaren Seitentext als Besprechungsreferenz bereit.
-- **Zusammenfassen und kopieren.** Erstellen Sie eine Zusammenfassung zum Nachlesen oder für eine spätere Besprechung.
-- **Seitenbereich und erweiterte Ansicht.** Wechseln Sie das Layout, blenden Sie Teilnehmersteuerungen aus und passen Sie die Protokollschriftgröße an.
-- **Neun Oberflächensprachen.** Englisch, Japanisch, Französisch (Frankreich), Deutsch (Deutschland), Spanisch (USA), Italienisch, Indonesisch, Portugiesisch (Brasilien) und Hindi. Die erste Auswahl folgt den Browsereinstellungen, mit Englisch als Fallback. Manuelle Einstellungen werden gespeichert. Der Dunkelmodus folgt dem Browser bzw. Betriebssystem.
+- Verbinden Sie ChatGPT, Gemini, Claude oder Grok mit Ihren bestehenden Konten.
+- Senden Sie ein Thema und lassen Sie die verbundenen KIs nacheinander antworten. Mit `@Grok` oder einem anderen KI-Namen wählen Sie die erste Antwort aus.
 
-VaultSessions ist ein Machbarkeitsnachweis für eine Besprechungsoberfläche, die unterschiedliche KI-Kontexte, Persönlichkeiten und menschliche Perspektiven zusammenbringt. Das Projekt ist weder mit OpenAI, Google oder Anthropic verbunden noch von diesen Unternehmen empfohlen.
+**[VaultSessions installieren](#installation)**
+
+> [!IMPORTANT]
+> **Verwenden Sie für VaultSessions und die offiziellen KI-Chats getrennte Chrome-Fenster.**
+>
+> Öffnen Sie VaultSessions als Seitenleiste oder Besprechungsseite in einem Fenster und die offiziellen KI-Tabs in einem zweiten. VaultSessions aktiviert den jeweiligen KI-Tab, um Nachrichten zu senden und Antworten abzurufen. Im selben Fenster würde dabei die Besprechung oder die Seite neben der Seitenleiste aus dem Blick geraten.
+>
+> Verkleinern Sie das Fenster mit den KI-Tabs und schieben Sie es in eine Bildschirmecke. Lassen Sie VaultSessions groß genug, um der Besprechung zu folgen.
+
+![Ein großes VaultSessions-Fenster und ein kleines Fenster mit den KI-Tabs unten rechts.](separate-chrome-windows.svg)
 
 ## Installation
 
@@ -68,7 +72,7 @@ VaultSessions/
 1. Laden Sie dieses Repository herunter oder klonen Sie es in einen dauerhaft aufbewahrten Ordner.
 2. Öffnen Sie `chrome://extensions/` und aktivieren Sie den **Entwicklermodus**.
 3. Klicken Sie auf **Entpackte Erweiterung laden** und wählen Sie den inneren Ordner **`VaultSessions/`** mit `manifest.json`, nicht das Stammverzeichnis des Repositorys.
-4. Öffnen Sie die offiziellen Websites von ChatGPT, Gemini und/oder Claude und melden Sie sich selbst an.
+4. Öffnen Sie die offiziellen Websites von ChatGPT, Gemini, Claude oder Grok und melden Sie sich selbst an.
 5. Klicken Sie in dem Tab, in dem die Besprechungs-Seitenbereich erscheinen soll, auf das VaultSessions-Erweiterungssymbol.
 
 Verwenden Sie eine aktuelle Chrome-Version. Das Manifest verlangt mindestens Chrome 116; die Kompatibilität mit Browser-APIs und Anbieteroberflächen kann jedoch variieren. Für normale Besprechungen sind weder ein Build-Schritt noch ein Server nötig.
@@ -90,10 +94,10 @@ Nach dem Verschieben des Ordners müssen Sie die neue `meeting.html` öffnen und
 
 Manche KI-Browser-Seitenbereiche können `file://`-Seiten nicht bedienen. Installieren Sie für solche Integrationen Python 3 und starten Sie den optionalen Loopback-Server:
 
-| Plattform | Startdatei | Terminalbefehl im inneren Ordner `VaultSessions/` |
-| --- | --- | --- |
-| macOS | Doppelklick auf `VaultSessions/start.command` | `python3 serve.py` |
-| Windows | Doppelklick auf `VaultSessions/start.bat` | `py -3 serve.py` oder `python serve.py` |
+| Plattform | Startdatei                                    | Terminalbefehl im inneren Ordner `VaultSessions/` |
+| --------- | --------------------------------------------- | ------------------------------------------------- |
+| macOS     | Doppelklick auf `VaultSessions/start.command` | `python3 serve.py`                                |
+| Windows   | Doppelklick auf `VaultSessions/start.bat`     | `py -3 serve.py` oder `python serve.py`           |
 
 Falls die macOS-Startdatei ihr Ausführungsrecht verloren hat, verwenden Sie `chmod +x start.command` oder den obigen Terminalbefehl. Lassen Sie das Terminalfenster geöffnet; Ctrl+C beendet den Server. Port 8766 muss frei sein.
 
@@ -126,6 +130,23 @@ VaultSessions übergibt Bilder innerhalb des Browsers an den offiziellen KI-Tab,
 Das Kopfzeilenmenü blendet Teilnehmer- und Einstellungssteuerungen aus. **A−**, **A＋** und **Standardgröße** ändern die Schriftgröße der Protokolltexte einschließlich Zusammenfassungen zwischen 75 % und 175 %. Die Einstellung gilt für beide Layouts und bleibt nach Browserneustarts erhalten.
 
 Temporäre Schnappschüsse nutzen `chrome.storage.session` mit bis zu 500 angezeigten Einträgen und 500 regulären Verlaufseinträgen pro Speicherung. Die aktive Ansicht kann mehr enthalten. Dies ist kein dauerhaftes Archiv. Sprache, Schriftgröße, Seitenteilungspräferenz und registrierte Datei-URL werden im lokalen Browserspeicher abgelegt. Ausgewählte, noch nicht gesendete Bilder bleiben beim Ansichtswechsel nicht erhalten.
+
+<details>
+<summary>Weitere Funktionen im Detail</summary>
+
+- **Die Persönlichkeit Ihrer gewohnten KI mitbringen.** Verbinden Sie die offiziellen Webchats, die Sie bereits nutzen, mit ihren bestehenden Unterhaltungen und Personalisierungen. Es werden keine KI-API-Schlüssel benötigt.
+- **Natürliche Gruppendiskussionen.** Verbundene KIs sprechen abwechselnd, bringen neue Perspektiven ein und setzen aus, wenn sie nichts hinzuzufügen haben. Bei nur einer verbundenen KI gibt es eine einzelne Antwort.
+- **Den ersten Antwortenden natürlich bestimmen.** Nutzen Sie `@GPT`, `@ChatGPT`, `@Gemini`, `@Claude`, `@Grok` oder `To Gemini`. Ohne Angabe wird die erste KI zufällig gewählt.
+- **Visuellen Kontext teilen.** Hängen Sie bis zu vier Bilder an oder fügen Sie sie ein und besprechen Sie sie anhand ihrer Nummern.
+- **Während der Bilderstellung mit anderen KIs sprechen.** Sobald die native Bilderstellung erkannt wird, ist die erzeugende KI (ChatGPT oder Gemini) vorübergehend nicht verfügbar. Mit den anderen verbundenen KIs können Sie weiterreden. Fertige Vorschauen erscheinen bei der ursprünglichen Anfrage und starten keine neue Diskussionsrunde. VS zeigt komprimierte Vorschauen; Originale finden Sie im offiziellen Chat. Fehler bei Erstellung oder Abruf sowie Zeitüberschreitungen erscheinen im Protokoll. Die KI kehrt automatisch zurück, sobald ihr Chat bereit ist. Lassen Sie den offiziellen Tab geöffnet; der Fortschritt im Hintergrund hängt vom Anbieter und Browser ab. Auch SVG-Code und SVG-Dateien von Claude werden unterstützt: VS entfernt Skripte und externe Verweise und erstellt eine Rastervorschau.
+- **Die aktuelle Seite teilen.** Stellen Sie bei Bedarf lesbaren Seitentext als Besprechungsreferenz bereit.
+- **Zusammenfassen und kopieren.** Erstellen Sie eine Zusammenfassung zum Nachlesen oder für eine spätere Besprechung.
+- **Seitenbereich und erweiterte Ansicht.** Wechseln Sie das Layout, blenden Sie Teilnehmersteuerungen aus und passen Sie die Protokollschriftgröße an.
+- **Neun Oberflächensprachen.** Englisch, Japanisch, Französisch (Frankreich), Deutsch (Deutschland), Spanisch (USA), Italienisch, Indonesisch, Portugiesisch (Brasilien) und Hindi. Die erste Auswahl folgt den Browsereinstellungen, mit Englisch als Fallback. Manuelle Einstellungen werden gespeichert. Der Dunkelmodus folgt dem Browser bzw. Betriebssystem.
+
+</details>
+
+VaultSessions ist ein Machbarkeitsnachweis für eine Besprechungsoberfläche, die unterschiedliche KI-Kontexte, Persönlichkeiten und menschliche Perspektiven zusammenbringt. Das Projekt ist weder mit OpenAI, Google oder Anthropic verbunden noch von diesen Unternehmen empfohlen.
 
 ### Datenschutz, Berechtigungen und Kompatibilität
 
