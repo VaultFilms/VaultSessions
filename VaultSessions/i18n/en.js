@@ -279,6 +279,8 @@ VaultI18n.register("en", {
     "notice_045": "Save any unsent draft before reloading.",
     "notice_046": "Image {0}: {1}",
     "advanced": "Advanced",
+    "imageJobAbandon": "Return to the meeting without this image",
+    "imageJobAbandoned": "Image retrieval ended.",
     "imageJobGenerating": "Generating image",
     "imageJobWaiting": "Image generation is continuing. You can talk to the other AI participants.",
     "imageJobComplete": "Image ready",
@@ -352,6 +354,14 @@ VaultI18n.register("en", {
     "inspectionReading": "Reading the selected AI tab…",
     "inspectionInvalid": "Invalid Inspector report. Reload the extension and official AI tabs.",
     "imageRelayBusy": "Sharing image",
-    "imageRelayFailed": "Image sharing could not be completed. Check the official chat."
+    "imageRelayFailed": "Image sharing could not be completed. Check the official chat.",
+    "speechToggle": "Audio",
+    "speechStarting": "{0}: starting read-aloud…",
+    "speechSpeaking": "{0}: reading aloud…",
+    "speechPaused": "{0}: playback paused. Continue when ready.",
+    "speechUnavailable": "{0}: check playback in the official tab, then continue.",
+    "speechStopFailed": "Could not stop playback. Stop it in the official tab, then continue.",
+    "speechUnsupported": "{0}: read-aloud is not available for this response.",
+    "speechNext": "Stop reading and continue"
   }
 });

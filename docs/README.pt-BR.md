@@ -32,7 +32,7 @@
 
 **Um aplicativo de reuniões de código aberto em que as pessoas e seus assistentes pessoais de IA — ChatGPT, Gemini, Claude e Grok — podem pensar e colaborar juntos, aproveitando a personalização existente.**
 
-Escolha **Chat** ou **Debate** nas configurações da reunião. Debate (antes Dev) pede que as IAs questionem premissas e tragam outras perspectivas, mantendo sua personalização. Grok foi testado com uma conta gratuita. Se atingir o limite de uso, passe para a próxima IA quando essa opção aparecer. Grok recebe imagens anexadas. Imagens geradas por ele não são detectadas nem encaminhadas automaticamente.
+Escolha **Chat** ou **Debate** nas configurações da reunião. Debate (antes Dev) pede que as IAs questionem premissas e tragam outras perspectivas, mantendo sua personalização. Grok foi testado com uma conta gratuita. Se atingir o limite de uso, passe para a próxima IA quando essa opção aparecer. Grok recebe imagens anexadas. A geração nativa de imagens do Grok não é detectada nem compartilhada automaticamente. Código SVG e anexos SVG legíveis podem ser exibidos como prévias seguras.
 
 ## Recursos
 
@@ -75,7 +75,7 @@ VaultSessions/
 4. Abra os sites oficiais do ChatGPT, Gemini, Claude ou Grok e entre nas suas contas por conta própria.
 5. Clique no ícone da extensão VaultSessions na aba em que deseja mostrar o painel da reunião.
 
-Use uma versão atual do Chrome. O mínimo declarado no manifesto é Chrome 116, mas a compatibilidade das APIs do navegador e das interfaces dos provedores pode variar. Reuniões normais não precisam de compilação nem de servidor.
+Use uma versão atual do Chrome. O mínimo declarado no manifesto é Chrome 119, mas a compatibilidade das APIs do navegador e das interfaces dos provedores pode variar. Reuniões normais não precisam de compilação nem de servidor.
 
 Após atualizar os arquivos, recarregue a extensão, as abas oficiais das IAs e a visualização da reunião.
 
@@ -116,6 +116,10 @@ Digite um tema e pressione Enter. Shift+Enter insere uma nova linha; durante a c
 Os limites padrão são **3 contribuições** e **6 solicitações**. PASS conta como solicitação, não como contribuição. A discussão também termina quando todos os participantes conectados passam a vez consecutivamente. Use **Interromper discussão** para impedir os próximos turnos; uma resposta em andamento ainda pode precisar ser coletada antes de a entrada ser liberada.
 
 As abas de IA são trazidas para a frente durante o envio e a coleta de respostas. Evite editar ou trocar essas conversas durante um turno. A proteção de entrada ajuda a impedir digitação acidental após mudanças de foco. As instruções de papel são mensagens de chat normais, não funções de sistema; não há garantia de preservação da personalidade nem de cumprimento das instruções.
+
+### Respostas em voz alta
+
+Ative **Áudio** perto do campo de mensagem para usar a leitura em voz alta oficial de cada IA. VaultSessions aguarda antes de perguntar à próxima IA; use **Parar leitura e continuar** para avançar.
 
 ### Imagens e resumos
 
@@ -160,11 +164,17 @@ Compartilhar uma página pode incluir informações privadas visíveis em págin
 
 ### Como contribuir
 
-Contribuições são bem-vindas!
+VaultSessions é um projeto de código aberto que prioriza o uso local e o desenvolvimento com IA.
 
-Faça um fork deste repositório, melhore VaultSessions e envie um Pull Request.
+Escrever código já não é algo que os humanos precisam fazer sozinhos. As ferramentas de programação com IA permitem que qualquer pessoa participe, mesmo sem experiência prévia. O próprio código do VaultSessions foi escrito pelo OpenAI Codex.
 
-Vamos construir uma forma melhor de humanos e IA pensarem juntos.
+Use a IA que preferir — Codex, Claude Code, Gemini ou qualquer outro agente de programação — para entender, corrigir e ampliar o projeto. Contribuições de código escrito por pessoas também são bem-vindas.
+
+Ao desenvolver ou corrigir VaultSessions com uma IA, peça que ela leia primeiro as [notas de correções](REPAIR_NOTES.md) relevantes. Elas registram sintomas, causas, correções e etapas de verificação de problemas anteriores.
+
+VaultSessions depende da estrutura dos sites oficiais das IAs, o que torna suas integrações naturalmente frágeis. Mudanças nesses sites podem fazer com que recursos parem de funcionar. Essa é uma limitação da forma como o aplicativo funciona.
+
+Se algo parar de funcionar, você pode pedir à sua própria IA que ajude a investigar e corrigir o problema e compartilhar as melhorias por meio de forks e Pull Requests.
 
 Esta distribuição não inclui a suíte interna de testes. Descreva seus passos de verificação ao propor mudanças, principalmente nos adaptadores DOM dos provedores. Consulte [VaultSessions/i18n/README.md](../VaultSessions/i18n/README.md) para adicionar um idioma.
 

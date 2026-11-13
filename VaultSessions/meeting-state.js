@@ -7,14 +7,14 @@
   function imageState(row){
     if(row.type!=='image-generation')return {};
     const task=row.imageTask;
-    if(!task||!['chatgpt','gemini','claude'].includes(task.provider)||!Number.isInteger(task.tabId)||!Number.isFinite(task.startedAt)||typeof task.requestId!=='string'||!/^[a-zA-Z0-9-]{1,80}$/.test(task.requestId)||typeof task.conversationUrl!=='string'||!(task.provider==='chatgpt'?/^https:\/\/chatgpt\.com\/c\/[^/?#]+\/?$/:task.provider==='gemini'?/^https:\/\/gemini\.google\.com\/(?:u\/\d+\/)?app\/[^/?#]+\/?$/:/^https:\/\/claude\.ai\/chat\/[^/?#]+\/?$/).test(task.conversationUrl))throw Error('Invalid image-generation task.');
+    if(!task||!['chatgpt','gemini','claude','grok'].includes(task.provider)||!Number.isInteger(task.tabId)||!Number.isFinite(task.startedAt)||typeof task.requestId!=='string'||!/^[a-zA-Z0-9-]{1,80}$/.test(task.requestId)||typeof task.conversationUrl!=='string'||!(task.provider==='grok'?/^https:\/\/grok\.com\/c\/[^/?#]+\/?$/:task.provider==='chatgpt'?/^https:\/\/chatgpt\.com\/c\/[^/?#]+\/?$/:task.provider==='gemini'?/^https:\/\/gemini\.google\.com\/(?:u\/\d+\/)?app\/[^/?#]+\/?$/:/^https:\/\/claude\.ai\/chat\/[^/?#]+\/?$/).test(task.conversationUrl))throw Error('Invalid image-generation task.');
     const images=row.generatedImages||[];
     if(!Array.isArray(images)||images.length>4)throw Error('Invalid generated-image previews.');
     const generatedImages=images.map(img=>{
       if(!img||typeof img.dataUrl!=='string'||img.dataUrl.length>380000||!/^data:image\/(?:webp|png);base64,[A-Za-z0-9+/]+={0,2}$/.test(img.dataUrl)||!Number.isInteger(img.width)||!Number.isInteger(img.height)||img.width<1||img.height<1||img.width>1600||img.height>1600)throw Error('Invalid generated-image preview.');
       return {dataUrl:img.dataUrl,width:img.width,height:img.height,name:typeof img.name==='string'?img.name.slice(0,100):'generated-image.webp'};
     });
-    return {imageTask:{provider:task.provider,tabId:task.tabId,requestId:task.requestId,conversationUrl:task.conversationUrl,startedAt:task.startedAt,topic:typeof task.topic==='string'?task.topic.slice(0,1000):'',failed:task.failed===true,resolved:task.resolved===true,state:['complete','error'].includes(task.state)?task.state:'waiting'},generatedImages};
+    return {imageTask:{provider:task.provider,tabId:task.tabId,requestId:task.requestId,conversationUrl:task.conversationUrl,startedAt:task.startedAt,topic:typeof task.topic==='string'?task.topic.slice(0,1000):'',failed:task.failed===true,resolved:task.resolved===true,state:['complete','error','abandoned'].includes(task.state)?task.state:'waiting'},generatedImages};
   }
   function clean(snapshot){
     if(!snapshot||snapshot.version!==1||!Array.isArray(snapshot.rows)||!Array.isArray(snapshot.history))throw Error('会議ログの形式が不正です。');

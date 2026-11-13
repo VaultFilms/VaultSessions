@@ -141,3 +141,5 @@ body.side-panel #meeting-setup>summary #ui-language{width:auto;padding:0;font-si
 .entry[data-provider="grok"] .entry-body{background:#f5f2fb;border-color:#e7def5}
 :root[data-theme="dark"] .entry[data-provider="grok"] .entry-body{background:#30283d;border-color:#4d3c62}
 @media(max-width:400px){body.side-panel #invitations{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+#speech-controls{flex:0 0 100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;font-size:13px}#speech-controls label{display:flex;align-items:center;gap:7px;cursor:pointer}#speech-status{flex:1;min-width:100px;font-size:12px;color:var(--muted)}#speech-next{font-size:12px;padding:5px 9px}#speech-controls .toggle{width:36px;height:21px;flex-shrink:0}#speech-controls .toggle:before{width:15px;height:15px}#speech-controls .toggle:checked:before{transform:translateX(15px)}body.side-panel #speech-controls{font-size:12px;gap:7px}body.side-panel #speech-status{font-size:11px}#speech-next[hidden]{display:none}

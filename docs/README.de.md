@@ -32,7 +32,7 @@
 
 **Eine Open-Source-Besprechungs-App, in der Menschen und ihre persönlichen KI-Assistenten — ChatGPT, Gemini, Claude und Grok — mit ihrer bestehenden Personalisierung gemeinsam denken und zusammenarbeiten können.**
 
-Wählen Sie **Chat** oder **Debate** in den Besprechungseinstellungen. Debate (früher Dev) bittet die KI, Annahmen zu prüfen und andere Sichtweisen einzubringen. Die Personalisierung bleibt erhalten. Grok wurde mit einem kostenlosen Konto getestet. Bei einem Nutzungslimit können Sie zur nächsten KI wechseln, sofern die Option angezeigt wird. Grok kann Bildanhänge empfangen. Von Grok erzeugte Bilder werden nicht automatisch erkannt oder weitergeleitet.
+Wählen Sie **Chat** oder **Debate** in den Besprechungseinstellungen. Debate (früher Dev) bittet die KI, Annahmen zu prüfen und andere Sichtweisen einzubringen. Die Personalisierung bleibt erhalten. Grok wurde mit einem kostenlosen Konto getestet. Bei einem Nutzungslimit können Sie zur nächsten KI wechseln, sofern die Option angezeigt wird. Grok kann Bildanhänge empfangen. Grok-Bildgenerierung wird nicht automatisch erkannt oder weitergeleitet. SVG-Code und lesbare SVG-Anhänge können als sichere Vorschau angezeigt werden.
 
 ## Funktionen
 
@@ -75,7 +75,7 @@ VaultSessions/
 4. Öffnen Sie die offiziellen Websites von ChatGPT, Gemini, Claude oder Grok und melden Sie sich selbst an.
 5. Klicken Sie in dem Tab, in dem die Besprechungs-Seitenbereich erscheinen soll, auf das VaultSessions-Erweiterungssymbol.
 
-Verwenden Sie eine aktuelle Chrome-Version. Das Manifest verlangt mindestens Chrome 116; die Kompatibilität mit Browser-APIs und Anbieteroberflächen kann jedoch variieren. Für normale Besprechungen sind weder ein Build-Schritt noch ein Server nötig.
+Verwenden Sie eine aktuelle Chrome-Version. Das Manifest verlangt mindestens Chrome 119; die Kompatibilität mit Browser-APIs und Anbieteroberflächen kann jedoch variieren. Für normale Besprechungen sind weder ein Build-Schritt noch ein Server nötig.
 
 Laden Sie nach einem Update die Erweiterung, die offiziellen KI-Tabs und die Besprechungsansicht neu.
 
@@ -116,6 +116,10 @@ Geben Sie ein Thema ein und drücken Sie Enter. Umschalt+Enter fügt einen Zeile
 Die Standardgrenzen sind **3 Beiträge** und **6 Anfragen**. PASS zählt als Anfrage, nicht als Beitrag. Wenn alle verbundenen Teilnehmer nacheinander aussetzen, endet die Diskussion ebenfalls. **Diskussion stoppen** verhindert weitere Runden. Eine laufende Antwort muss möglicherweise noch abgerufen werden, bevor die Eingabe wieder freigegeben wird.
 
 KI-Tabs werden beim Senden und Abrufen von Antworten in den Vordergrund geholt. Bearbeiten oder wechseln Sie währenddessen die betroffenen Unterhaltungen nicht. Ein Eingabeschutz hilft gegen versehentliche Tastatureingaben nach Fokuswechseln. Rollenanweisungen sind normale Chatnachrichten, keine Systemrollen. Der Erhalt der Persönlichkeit und das Befolgen der Anweisungen sind nicht garantiert.
+
+### Antworten vorlesen
+
+Aktivieren Sie **Audio** neben dem Nachrichtenfeld, um die offizielle Vorlesefunktion der jeweiligen KI zu nutzen. VaultSessions wartet, bevor die nächste KI gefragt wird. Mit **Vorlesen stoppen und weiter** können Sie fortfahren.
 
 ### Bilder und Zusammenfassungen
 
@@ -160,11 +164,17 @@ Geteilter Seitentext kann private Informationen angemeldeter Seiten enthalten. D
 
 ### Mitwirken
 
-Beiträge sind willkommen!
+VaultSessions ist ein Open-Source-Projekt, das lokale Nutzung und KI-gestützte Entwicklung in den Mittelpunkt stellt.
 
-Forken Sie dieses Repository, verbessern Sie VaultSessions und reichen Sie einen Pull Request ein.
+Menschen müssen Code heute nicht mehr allein schreiben. KI-Programmierwerkzeuge ermöglichen allen die Teilnahme, auch ohne vorherige Programmiererfahrung. Der Code von VaultSessions selbst wurde von OpenAI Codex geschrieben.
 
-Entwickeln wir gemeinsam eine bessere Art, wie Menschen und KI miteinander denken.
+Nutzen Sie die KI Ihrer Wahl — Codex, Claude Code, Gemini oder einen anderen Coding-Agenten —, um das Projekt zu verstehen, zu reparieren und zu erweitern. Auch von Menschen geschriebener Code ist willkommen.
+
+Wenn Sie VaultSessions mit einer KI entwickeln oder reparieren, lassen Sie sie zuerst die relevanten [Reparaturnotizen](REPAIR_NOTES.md) lesen. Dort sind frühere Symptome, Ursachen, Korrekturen und Prüfschritte dokumentiert.
+
+VaultSessions hängt von der Struktur der offiziellen KI-Websites ab. Dadurch sind seine Integrationen grundsätzlich anfällig für Änderungen. Änderungen dieser Websites können Funktionen beeinträchtigen. Das ist eine Einschränkung, die sich aus der Funktionsweise der App ergibt.
+
+Wenn etwas nicht funktioniert, können Sie Ihre eigene KI um Hilfe bei der Untersuchung und Behebung bitten und Ihre Verbesserungen über Forks und Pull Requests teilen.
 
 Die interne Testsuite ist nicht Teil dieser Distribution. Beschreiben Sie bei Änderungen Ihre Prüfschritte, besonders für DOM-Adapter der Anbieter. Wie Sie eine Sprache hinzufügen, erfahren Sie in [VaultSessions/i18n/README.md](../VaultSessions/i18n/README.md).
 

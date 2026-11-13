@@ -260,6 +260,8 @@ VaultI18n.register("ja", {
     "notice_045": "未送信の下書きは、再読み込み前に控えてください。",
     "notice_046": "画像{0}：{1}",
     "advanced": "詳細設定",
+    "imageJobAbandon": "画像を待たずに会議へ戻す",
+    "imageJobAbandoned": "画像の取得を終了しました。",
     "imageJobGenerating": "画像生成中",
     "imageJobWaiting": "画像生成を続けています。他のAIとは会話できます。",
     "imageJobComplete": "画像が完成しました",
@@ -333,6 +335,14 @@ VaultI18n.register("ja", {
     "inspectionReading": "選択したAIタブを検査中…",
     "inspectionInvalid": "検査結果が不正です。拡張機能と公式AIタブを再読み込みしてください。",
     "imageRelayBusy": "画像を共有中",
-    "imageRelayFailed": "画像の共有を完了できませんでした。公式チャットを確認してください。"
+    "imageRelayFailed": "画像の共有を完了できませんでした。公式チャットを確認してください。",
+    "speechToggle": "音声",
+    "speechStarting": "{0}: 読み上げを開始中…",
+    "speechSpeaking": "{0}: 読み上げ中…",
+    "speechPaused": "{0}: 読み上げは一時停止中です。次へ進めます。",
+    "speechUnavailable": "{0}: 公式タブで再生状態を確認してから次へ進んでください。",
+    "speechStopFailed": "停止を確認できません。公式タブで停止してから次へ進んでください。",
+    "speechUnsupported": "{0}: この回答では読み上げを利用できません。",
+    "speechNext": "読み上げを止めて次へ"
   }
 });

@@ -279,6 +279,8 @@ VaultI18n.register("it", {
     "notice_045": "Salva eventuali bozze prima di ricaricare.",
     "notice_046": "Immagine {0}: {1}",
     "advanced": "Avanzate",
+    "imageJobAbandon": "Torna alla riunione senza questa immagine",
+    "imageJobAbandoned": "Recupero dell’immagine terminato.",
     "imageJobGenerating": "Generazione immagine",
     "imageJobWaiting": "La generazione continua. Puoi parlare con le altre IA.",
     "imageJobComplete": "Immagine pronta",
@@ -352,6 +354,14 @@ VaultI18n.register("it", {
     "inspectionReading": "Ispezione della scheda selezionata…",
     "inspectionInvalid": "Rapporto non valido. Ricarica l’estensione e le schede IA.",
     "imageRelayBusy": "Condivisione immagine",
-    "imageRelayFailed": "Impossibile completare la condivisione dell’immagine. Controlla la chat ufficiale."
+    "imageRelayFailed": "Impossibile completare la condivisione dell’immagine. Controlla la chat ufficiale.",
+    "speechToggle": "Audio",
+    "speechStarting": "{0}: avvio lettura…",
+    "speechSpeaking": "{0}: lettura in corso…",
+    "speechPaused": "{0}: riproduzione in pausa. Puoi continuare.",
+    "speechUnavailable": "{0}: controlla la riproduzione nella scheda ufficiale, poi continua.",
+    "speechStopFailed": "Arresto non confermato. Ferma l’audio nella scheda ufficiale, poi continua.",
+    "speechUnsupported": "{0}: lettura non disponibile per questa risposta.",
+    "speechNext": "Ferma la lettura e continua"
   }
 });

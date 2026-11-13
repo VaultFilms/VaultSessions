@@ -279,6 +279,8 @@ VaultI18n.register("de-DE", {
     "notice_045": "Sichern Sie ungesendete Entwürfe vor dem Neuladen.",
     "notice_046": "Bild {0}: {1}",
     "advanced": "Erweitert",
+    "imageJobAbandon": "Ohne dieses Bild zur Besprechung zurückkehren",
+    "imageJobAbandoned": "Bildabruf beendet.",
     "imageJobGenerating": "Bild wird erstellt",
     "imageJobWaiting": "Die Bilderstellung läuft weiter. Sie können mit den anderen KI-Teilnehmern sprechen.",
     "imageJobComplete": "Bild fertig",
@@ -352,6 +354,14 @@ VaultI18n.register("de-DE", {
     "inspectionReading": "Ausgewählter KI-Tab wird geprüft…",
     "inspectionInvalid": "Ungültiger Bericht. Erweiterung und KI-Tabs neu laden.",
     "imageRelayBusy": "Bild wird geteilt",
-    "imageRelayFailed": "Das Bild konnte nicht vollständig geteilt werden. Prüfe den offiziellen Chat."
+    "imageRelayFailed": "Das Bild konnte nicht vollständig geteilt werden. Prüfe den offiziellen Chat.",
+    "speechToggle": "Audio",
+    "speechStarting": "{0}: Vorlesen wird gestartet…",
+    "speechSpeaking": "{0}: liest vor…",
+    "speechPaused": "{0}: Wiedergabe pausiert. Sie können fortfahren.",
+    "speechUnavailable": "{0}: Wiedergabe im offiziellen Tab prüfen, dann fortfahren.",
+    "speechStopFailed": "Stopp nicht bestätigt. Im offiziellen Tab stoppen, dann fortfahren.",
+    "speechUnsupported": "{0}: Vorlesen für diese Antwort nicht verfügbar.",
+    "speechNext": "Vorlesen stoppen und weiter"
   }
 });

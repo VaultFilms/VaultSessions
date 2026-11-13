@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.6';
+  const VERSION = '0.9.12';
   // DOM verified on the signed-in Gemini website on 2026-10-29.
   const EDITORS = ['.ql-editor[contenteditable="true"][role="textbox"]'];
   const SEND = "button.send-button, button[aria-label=\"プロンプトを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -86,6 +86,11 @@
       || (prompt.startsWith('You are participating in a group discussion\n') && prompt.includes('Debate persona:')));
     let fallbackReadySince = null;
     let imageReadySince = null, imageSignature = '';
+    const svgTracker = globalThis.RoundtableSVG?.createTracker({
+      current:()=>job,
+      complete:(task,images)=>{task.images=images;endJob('complete');},
+      fail:(_task,error)=>endJob('error',error)
+    });
     const homePath = value => /^\/(?:u\/\d+\/)?app\/?$/.test(value) || value === '/';
     const savedPath = value => /^\/(?:u\/\d+\/)?app\/[^/]+\/?$/.test(value);
     function check() {
@@ -122,6 +127,13 @@
         (!currentTurn || element.closest('.conversation-container') === currentTurn) &&
         (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
       const reply = replies.at(-1);
+      const svgModel = reply?.closest('model-response');
+      const svgCopy = svgModel?.querySelector(COPY);
+      const svgComplete = reply?.getAttribute('aria-busy') === 'false' && visible(svgCopy) && !svgCopy.disabled;
+      if (!silent && !job.imageRelay && svgTracker?.update(job,reply,svgComplete && !generating() && savedPath(path))) {
+        job.text = bodyText(reply);
+        return;
+      }
       if (!silent && globalThis.RoundtableGeminiImages && globalThis.RoundtableGeneratedImages) {
         const imageState = RoundtableGeminiImages.inspect(userMessage);
         if (imageState.markers.length) { job.kind = 'image'; job.phase = 'generating_image'; }
@@ -299,12 +311,24 @@
     return { ok: true, recovered: !!completed, url: location.origin + location.pathname };
   }
 
+  const speech=globalThis.RoundtableSpeech?.create({provider:'gemini',getJob:()=>job,users:userBodies,replies:assistantBodies,userText,url:()=>location.origin+location.pathname});
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
+    if (message?.type === 'ROUNDTABLE_GEMINI_ABANDON_IMAGE') {
+      if (job?.requestId === message.requestId && job.kind === 'image') {
+        endJob('abandoned');
+        job.abandoned = true;
+        globalThis.RoundtableSVG?.releaseFrame(job);
+        job.images = null;
+      }
+      sendResponse({ok:true});
+      return;
+    }
     if(message?.type==='ROUNDTABLE_GEMINI_INSPECT'){
       if(!globalThis.VaultInspectorDOM){sendResponse({ok:false,error:'Reload the official AI tab to enable Inspector.'});return;}
       sendResponse({ok:true,report:VaultInspectorDOM.inspect('gemini',{editor:EDITORS,send:SEND,stop:STOP,user:USER_MESSAGE,reply:ASSISTANT,image:'img,canvas'},{phase:job?.phase,kind:job?.kind,busy,generating:generating()})});return;
     }
+    if(message?.type==='ROUNDTABLE_GEMINI_SPEECH'){if(!speech){sendResponse({ok:false,state:'unsupported'});return;}speech.handle(message).then(sendResponse);return true;}
     if (message?.type === 'ROUNDTABLE_GEMINI_HELLO') {
       sendResponse({ ok: true, version: VERSION, ready: !!findEditor(), busy: busy || generating(), url: location.origin + location.pathname });
       return;
@@ -318,6 +342,11 @@
         const users = userBodies();
         const user = users.findLast(element => matchesPrompt(element, '', job.receipt));
         if (!user || user !== users.at(-1)) throw Error('The image conversation has changed. Open the official chat.');
+        if (job.svgFrame) {
+          const reply=assistantBodies().filter(element=>user.compareDocumentPosition(element)&Node.DOCUMENT_POSITION_FOLLOWING).at(-1);
+          sendResponse(RoundtableSVG.collectFrame(job,reply,message.framesReady===true));
+          return;
+        }
         const images = job.images || RoundtableGeneratedImages.capture(RoundtableGeminiImages.inspect(user).images);
         sendResponse({ok:true,images,text:job.text,url:job.url});
       } catch(error) { sendResponse({ok:false,error:error.message}); }

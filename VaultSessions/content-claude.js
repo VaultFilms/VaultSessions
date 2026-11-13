@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.10.5';
+  const VERSION = '0.10.9';
   // Input, sending, and a test response were verified in signed-in Claude on 2026-10-29.
   const EDITORS = ['[data-testid="chat-input"][contenteditable="true"]'];
   const SEND = "button[data-testid=\"chat-input-send\"], button[aria-label=\"メッセージを送信\"], button[aria-label=\"Send message\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
@@ -126,6 +126,11 @@
     const allowsNoReply = silent && (/^\[switch to (chat|debate)\]$/.test(prompt)
       || (prompt.startsWith('You are participating in a group discussion\n') && prompt.includes('Debate persona:')));
     let svgSource = '', svgChangedAt = Date.now(), capturing = false;
+    const svgTracker = globalThis.RoundtableSVG?.createTracker({
+      current:()=>job,
+      complete:(task,images)=>{task.images=images;endJob('complete');},
+      fail:(_task,error)=>endJob('error',error)
+    });
     const homePath = value => value === '/new' || value === '/';
     const savedPath = value => /^\/chat\/[^/]+\/?$/.test(value);
     function check() {
@@ -160,9 +165,18 @@
         !previousReplies.has(messageKey(element)) &&
         (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
       const reply = replies.at(-1);
+      if (!silent && !job.imageRelay && svgTracker?.update(job,reply,reply?.getAttribute('data-is-streaming') === 'false' && !generating() && savedPath(path))) {
+        job.text = bodyText(reply);
+        return;
+      }
       if (!silent && globalThis.RoundtableClaudeSVG) {
         const svg = RoundtableClaudeSVG.inspect(reply);
         if (svg) { job.kind = 'image'; job.phase = 'generating_image'; }
+        if (job.kind === 'image' && !svg && reply?.getAttribute('data-is-streaming') === 'false' && !generating()
+            && savedPath(path) && bodyText(reply).trim() && Date.now() - lastChange >= 1500) {
+          delete job.kind;
+          job.imageFallback = true;
+        }
         if (job.kind === 'image') {
           if (reply) job.text = bodyText(reply);
           if (svg?.source !== svgSource) { svgSource = svg?.source; svgChangedAt = Date.now(); }
@@ -172,9 +186,9 @@
             if (svg.source && !capturing) {
               capturing = true;const activeJob = job;
               RoundtableClaudeSVG.capture(svg.source).then(images => {
-                if (job !== activeJob) return;
+                if (job !== activeJob || activeJob.abandoned) return;
                 job.images = images;endJob('complete');
-              },error => {if(job === activeJob)endJob('error',error.message);});
+              },error => {if(job === activeJob && !activeJob.abandoned)endJob('error',error.message);});
             }
           }
           if (Date.now() - started > 20 * 60 * 1000) endJob('error', 'SVG generation timed out. Check the official chat.');
@@ -316,12 +330,13 @@
     return { ok: true, recovered: !!completed, url: location.origin + location.pathname };
   }
 
-  async function imageResult(requestId) {
+  async function imageResult(requestId, framesReady=false) {
     if (job?.requestId !== requestId || job.kind !== 'image' || job.phase !== 'complete') return {ok:false,error:'The SVG image is not ready.'};
     const users=userBodies(), user=users.findLast(element=>userText(element).includes(job.receipt));
     if(!user||user!==users.at(-1)||job.url!==location.origin+location.pathname)throw Error('The SVG conversation has changed.');
     if(job.images)return {ok:true,images:job.images,text:job.text,url:job.url};
     const reply=assistantBodies().filter(element=>user.compareDocumentPosition(element)&Node.DOCUMENT_POSITION_FOLLOWING).at(-1);
+    if(job.svgFrame)return RoundtableSVG.collectFrame(job,reply,framesReady);
     const svg=RoundtableClaudeSVG.inspect(reply);
     if(svg?.kind!=='file')throw Error('The generated SVG file is no longer available.');
     if(!job.previewPrepared){
@@ -342,18 +357,30 @@
     return {ok:true,needsFrame:true,text:job.text,url:job.url};
   }
 
+  const speech=globalThis.RoundtableSpeech?.create({provider:'claude',getJob:()=>job,users:userBodies,replies:assistantBodies,userText,url:()=>location.origin+location.pathname});
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
+    if (message?.type === 'ROUNDTABLE_CLAUDE_ABANDON_IMAGE') {
+      if (job?.requestId === message.requestId && job.kind === 'image') {
+        endJob('abandoned');
+        job.abandoned = true;
+        globalThis.RoundtableSVG?.releaseFrame(job);
+        job.images = null;
+      }
+      sendResponse({ok:true});
+      return;
+    }
     if(message?.type==='ROUNDTABLE_CLAUDE_INSPECT'){
       if(!globalThis.VaultInspectorDOM){sendResponse({ok:false,error:'Reload the official AI tab to enable Inspector.'});return;}
       sendResponse({ok:true,report:VaultInspectorDOM.inspect('claude',{editor:EDITORS,send:SEND,stop:STOP,user:USER_MESSAGE,reply:ASSISTANT,image:'img,canvas'},{phase:job?.phase,kind:job?.kind,busy,generating:generating()})});return;
     }
+    if(message?.type==='ROUNDTABLE_CLAUDE_SPEECH'){if(!speech){sendResponse({ok:false,state:'unsupported'});return;}speech.handle(message).then(sendResponse);return true;}
     if (message?.type === 'ROUNDTABLE_CLAUDE_HELLO') {
       sendResponse({ ok: true, version: VERSION, ready: !!findEditor(), busy: busy || generating(), url: location.origin + location.pathname });
       return;
     }
     if (message?.type === 'ROUNDTABLE_CLAUDE_RECOVER_ROLE') { sendResponse(recoverRole(message.text)); return; }
-    if (message?.type === 'ROUNDTABLE_CLAUDE_IMAGE_RESULT') { imageResult(message.requestId).then(sendResponse,error=>sendResponse({ok:false,error:error.message})); return true; }
+    if (message?.type === 'ROUNDTABLE_CLAUDE_IMAGE_RESULT') { imageResult(message.requestId,message.framesReady===true).then(sendResponse,error=>sendResponse({ok:false,error:error.message})); return true; }
     if (message?.type === 'ROUNDTABLE_CLAUDE_STATUS') {
       if (job?.requestId === message.requestId) refreshWatch?.();
       const {images: cachedImages, ...state} = job || {};

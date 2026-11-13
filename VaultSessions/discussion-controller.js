@@ -122,8 +122,8 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
     return value;
   };
   class DiscussionController {
-    constructor({ order, names, getTarget, exchange, roleState, recoverRole = async () => false, getManual = null, getMode = null, isAvailable = () => true, onEvent = () => {}, languageNames = ['English','Japanese'] }) {
-      Object.assign(this, { order, names, getTarget, exchange, roleState, recoverRole, getManual, getMode, isAvailable, onEvent });
+    constructor({ order, names, getTarget, exchange, roleState, recoverRole = async () => false, getManual = null, getMode = null, isAvailable = () => true, onEvent = () => {}, afterReply = async () => {}, languageNames = ['English','Japanese'] }) {
+      Object.assign(this, { order, names, getTarget, exchange, roleState, recoverRole, getManual, getMode, isAvailable, onEvent, afterReply });
       this.languageNames=languageNames.filter(name=>typeof name==='string'&&/^[A-Za-z][A-Za-z -]{1,49}$/.test(name));
       this.history = []; this.seen = new Map(); this.serial = 0;
       this.materialSeen = new Map();
@@ -456,6 +456,7 @@ Keep any contribution preferably within 300 characters. Respond in ${language}.`
           const entry = { seq: this.history.length + 1, speaker: this.names[id], text: parsed.text, runId: run.id };
           this.history.push(entry); this.remember(id, entry.seq);
           this.emit('reply', { runId: run.id, provider: id, text: parsed.text, ...(result.richText?{richText:result.richText}:{}), ...this.counts(run) });
+          if(!run.cancelled)await this.afterReply(id,result,{runId:run.id,cancelled:()=>run.cancelled});
         }
         if (!run.automatic || order.length < 2) { this.emit('ended', { runId: run.id, reason: 'normal', ...this.counts(run) }); return; }
       }

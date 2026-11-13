@@ -1,15 +1,17 @@
 "use strict";
 
 (() => {
-  const VERSION = '0.9.7';
+  const VERSION = '0.9.12';
   let blockedDraft;
   // ProseMirror and the Japanese send label were verified in normal Chat UI on 2026-10-29.
   // English labels, #prompt-textarea, and data-testid are compatibility candidates not verified in that session.
   // Message bodies, IDs, and turn states were verified in the current UI; retain legacy fallbacks.
   const EDITORS = [
     '#prompt-textarea[contenteditable="true"]',
-    '[contenteditable="true"].ProseMirror[role="textbox"]',
-    'textarea#prompt-textarea'
+    '[data-composer-markdown][contenteditable="true"][role="textbox"]',
+    'textarea#prompt-textarea',
+    '[data-composer-body] [contenteditable="true"].ProseMirror[role="textbox"]',
+    'form [contenteditable="true"].ProseMirror[role="textbox"]'
   ];
   const SEND = "button[data-testid=\"send-button\"], button[type=\"submit\"][aria-label=\"送信\"], button[type=\"submit\"][aria-label=\"Send\"], button[type=\"submit\"][aria-label=\"Send prompt\"], button[aria-label=\"Envoyer\"], button[aria-label=\"Envoyer le message\"], button[aria-label=\"Envoyer une invite\"], button[aria-label=\"Senden\"], button[aria-label=\"Nachricht senden\"], button[aria-label=\"Prompt senden\"], button[aria-label=\"Enviar\"], button[aria-label=\"Enviar mensaje\"], button[aria-label=\"Enviar indicación\"], button[aria-label=\"Invia\"], button[aria-label=\"Invia messaggio\"], button[aria-label=\"Invia prompt\"], button[aria-label=\"Kirim\"], button[aria-label=\"Kirim pesan\"], button[aria-label=\"Kirim perintah\"], button[aria-label=\"Enviar mensagem\"], button[aria-label=\"Enviar comando\"], button[aria-label=\"भेजें\"], button[aria-label=\"संदेश भेजें\"], button[aria-label=\"प्रॉम्प्ट भेजें\"]";
   const STOP = "button[data-testid=\"stop-button\"], button[aria-label=\"Stop generating\"], button[aria-label=\"Stop streaming\"], button[aria-label=\"生成を停止する\"], button[aria-label=\"停止\"], button[aria-label=\"Arrêter la réponse\"], button[aria-label=\"Arrêter la génération\"], button[aria-label=\"Generierung beenden\"], button[aria-label=\"Antwort stoppen\"], button[aria-label=\"Generierung stoppen\"], button[aria-label=\"Detener respuesta\"], button[aria-label=\"Detener generación\"], button[aria-label=\"Interrompi risposta\"], button[aria-label=\"Interrompi generazione\"], button[aria-label=\"Hentikan respons\"], button[aria-label=\"Hentikan jawaban\"], button[aria-label=\"Hentikan pembuatan\"], button[aria-label=\"Parar resposta\"], button[aria-label=\"Interromper resposta\"], button[aria-label=\"Parar de gerar\"], button[aria-label=\"जवाब रोकें\"], button[aria-label=\"उत्तर रोकें\"], button[aria-label=\"जनरेट करना बंद करें\"]";
@@ -49,7 +51,9 @@
     for(const node of copy.querySelectorAll('[data-slate-placeholder="true"], [contenteditable="false"][aria-hidden="true"], [data-placeholder="true"][contenteditable="false"]'))node.remove();
     return normalize(plainText(copy)).replace(/[\u200b\ufeff]/g,'').trim();
   }
-  const findEditor = () => EDITORS.flatMap(selector => [...document.querySelectorAll(selector)]).find(visible);
+  // Writing/Canvas documents also use ProseMirror; only chat-composer candidates are eligible.
+  const findEditor = () => EDITORS.flatMap(selector => [...document.querySelectorAll(selector)])
+    .find(element => visible(element) && !element.closest?.('.writing-block-editor'));
   const findSend = () => [...document.querySelectorAll(SEND)].find(visible);
   const generating = () => [...document.querySelectorAll(STOP)].some(visible);
   const pause = () => new Promise(resolve => setTimeout(resolve, 100));
@@ -132,6 +136,12 @@
     let imageReadySince = null;
     let relayReadySince=null;
     let imageSignature = '';
+    let fallbackReadySince = null, fallbackText = '';
+    const svgTracker = globalThis.RoundtableSVG?.createTracker({
+      current:()=>job,
+      complete:(task,images)=>{task.images=images;endJob('complete');},
+      fail:(_task,error)=>endJob('error',error)
+    });
     const pendingPath = value => /^\/c\/local-chatgpt(?::|%3a)[^/]+\/?$/i.test(value);
     const savedPath = value => /^\/c\/[^/]+\/?$/.test(value) && !pendingPath(value);
     function check() {
@@ -160,6 +170,18 @@
         element !== userMessage && (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING))) {
         endJob('error', 'ChatGPT側で別の発言が追加されました。回答を混同しないため取得を中止しました。'); return;
       }
+      const replies = assistantBodies().filter(element =>
+        !previousReplies.has(messageKey(element)) &&
+        (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
+      const reply = replies.at(-1);
+      const replyTurn = reply?.closest('[data-talvt-turn-state]');
+      const replyComplete = !!reply && (replyTurn
+        ? replyTurn.getAttribute('data-talvt-turn-state') === 'complete'
+        : !!reply.closest('article, [data-testid^="conversation-turn-"]')?.querySelector('button[data-testid="copy-turn-action-button"]'));
+      if (!silent && !job.imageRelay && svgTracker?.update(job,reply,replyComplete && !generating() && savedPath(path))) {
+        job.text = bodyText(reply);
+        return;
+      }
       // Only native image-generation components after this receipt can detach a turn.
       // Plain text about images and earlier generated images must not trigger this path.
       if (!silent && globalThis.RoundtableGeneratedImages) {
@@ -182,14 +204,25 @@
           } else imageReadySince = null;
         }
         if (job.kind === 'image') {
+          const images = RoundtableGeneratedImages.loadedImages(markers);
+          const text = reply ? bodyText(reply) : '';
+          if (!images.length && text && replyComplete && !generating() && savedPath(path) && silentRoleSettled(userMessage)) {
+            if (text !== fallbackText) { fallbackText=text; fallbackReadySince=null; }
+            fallbackReadySince ??= Date.now();
+            if (Date.now() - fallbackReadySince >= 1500) {
+              delete job.kind;
+              job.imageFallback = true;
+              job.text = text;
+              job.richText = globalThis.RoundtableRichText?.captureReply(reply,'chatgpt') || null;
+              endJob('complete');
+              return;
+            }
+          } else fallbackReadySince = null;
           if (Date.now() - started > 20 * 60 * 1000) endJob('error', 'Image generation timed out. Check the official chat.');
           return;
         }
       }
-      const replies = assistantBodies().filter(element =>
-        !previousReplies.has(messageKey(element)) &&
-        (userMessage.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
-      const reply = replies.at(-1);
+
       if(job.imageRelay) {
         const turn=reply?.closest('[data-talvt-turn-state]');
         const completed=reply && (turn ? turn.getAttribute('data-talvt-turn-state')==='complete' : !!reply.closest('article, [data-testid^="conversation-turn-"]')?.querySelector('button[data-testid="copy-turn-action-button"]'));
@@ -386,8 +419,19 @@
     return { ok: true };
   }
 
+  const speech=globalThis.RoundtableSpeech?.create({provider:'chatgpt',getJob:()=>job,users:userBodies,replies:assistantBodies,userText,url:()=>location.origin+location.pathname});
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return;
+    if (message?.type === 'ROUNDTABLE_CHATGPT_ABANDON_IMAGE') {
+      if (job?.requestId === message.requestId && job.kind === 'image') {
+        endJob('abandoned');
+        job.abandoned = true;
+        globalThis.RoundtableSVG?.releaseFrame(job);
+        job.images = null;
+      }
+      sendResponse({ok:true});
+      return;
+    }
     if (message?.type === 'ROUNDTABLE_CHATGPT_CLEAR_DRAFT') {
       try { sendResponse(clearConfirmedDraft(message.draftToken)); }
       catch (error) { sendResponse({ok:false,error:error.message}); }
@@ -397,6 +441,7 @@
       if(!globalThis.VaultInspectorDOM){sendResponse({ok:false,error:'Reload the official AI tab to enable Inspector.'});return;}
       sendResponse({ok:true,report:VaultInspectorDOM.inspect('chatgpt',{editor:EDITORS,send:SEND,stop:STOP,user:USER_MESSAGE,reply:ASSISTANT,image:'img,canvas'},{phase:job?.phase,kind:job?.kind,busy,generating:generating()})});return;
     }
+    if(message?.type==='ROUNDTABLE_CHATGPT_SPEECH'){if(!speech){sendResponse({ok:false,state:'unsupported'});return;}speech.handle(message).then(sendResponse);return true;}
     if (message?.type === 'ROUNDTABLE_CHATGPT_HELLO') {
       sendResponse({ ok: true, version: VERSION, ready: !!findEditor(), busy: busy || generating(), url: location.origin + location.pathname });
       return;
@@ -410,6 +455,11 @@
         const users = userBodies();
         const user = users.findLast(element => messageText(userText(element)).startsWith(job.receipt));
         if (!user || user !== users.at(-1)) throw Error('The image conversation has changed. Open the official chat.');
+        if (job.svgFrame) {
+          const reply=assistantBodies().filter(element=>user.compareDocumentPosition(element)&Node.DOCUMENT_POSITION_FOLLOWING).at(-1);
+          sendResponse(RoundtableSVG.collectFrame(job,reply,message.framesReady===true));
+          return;
+        }
         const images = job.images || RoundtableGeneratedImages.capture(RoundtableGeneratedImages.loadedImages(RoundtableGeneratedImages.after(user)));
         sendResponse({ok:true,images,text:job.text,url:job.url});
       } catch(error) { sendResponse({ok:false,error:error.message}); }

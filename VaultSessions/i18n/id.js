@@ -263,6 +263,8 @@ VaultI18n.register("id", {
     "notice_045": "Simpan draf yang belum dikirim sebelum memuat ulang.",
     "notice_046": "Gambar {0}: {1}",
     "advanced": "Lanjutan",
+    "imageJobAbandon": "Kembali ke rapat tanpa menunggu gambar",
+    "imageJobAbandoned": "Pengambilan gambar dihentikan.",
     "imageJobGenerating": "Membuat gambar",
     "imageJobWaiting": "Pembuatan gambar berlanjut. Anda dapat berbicara dengan AI lain.",
     "imageJobComplete": "Gambar siap",
@@ -336,6 +338,14 @@ VaultI18n.register("id", {
     "inspectionReading": "Memeriksa tab AI yang dipilih…",
     "inspectionInvalid": "Laporan tidak valid. Muat ulang ekstensi dan tab AI.",
     "imageRelayBusy": "Membagikan gambar",
-    "imageRelayFailed": "Berbagi gambar tidak dapat diselesaikan. Periksa chat resmi."
+    "imageRelayFailed": "Berbagi gambar tidak dapat diselesaikan. Periksa chat resmi.",
+    "speechToggle": "Audio",
+    "speechStarting": "{0}: memulai pembacaan…",
+    "speechSpeaking": "{0}: sedang membacakan…",
+    "speechPaused": "{0}: pemutaran dijeda. Anda dapat melanjutkan.",
+    "speechUnavailable": "{0}: periksa pemutaran di tab resmi, lalu lanjutkan.",
+    "speechStopFailed": "Penghentian belum terkonfirmasi. Hentikan audio di tab resmi, lalu lanjutkan.",
+    "speechUnsupported": "{0}: pembacaan tidak tersedia untuk jawaban ini.",
+    "speechNext": "Hentikan pembacaan dan lanjutkan"
   }
 });

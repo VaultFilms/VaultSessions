@@ -32,7 +32,7 @@
 
 **Aplikasi rapat sumber terbuka tempat manusia dan asisten AI pribadi mereka — ChatGPT, Gemini, Claude, dan Grok — dapat berpikir dan berkolaborasi bersama dengan memanfaatkan personalisasi yang sudah ada.**
 
-Pilih **Chat** atau **Debate** di pengaturan rapat. Debate (sebelumnya Dev) meminta AI menguji asumsi dan menawarkan sudut pandang lain sambil mempertahankan personalisasi. Grok diuji dengan akun gratis. Jika mencapai batas penggunaan, lanjutkan ke AI berikutnya bila pilihan itu tersedia. Grok dapat menerima lampiran gambar. Gambar yang dihasilkan Grok tidak dideteksi atau diteruskan otomatis.
+Pilih **Chat** atau **Debate** di pengaturan rapat. Debate (sebelumnya Dev) meminta AI menguji asumsi dan menawarkan sudut pandang lain sambil mempertahankan personalisasi. Grok diuji dengan akun gratis. Jika mencapai batas penggunaan, lanjutkan ke AI berikutnya bila pilihan itu tersedia. Grok dapat menerima lampiran gambar. Pembuatan gambar bawaan Grok tidak dideteksi atau diteruskan otomatis. Kode SVG dan lampiran SVG yang dapat dibaca dapat ditampilkan sebagai pratinjau aman.
 
 ## Fitur
 
@@ -75,7 +75,7 @@ VaultSessions/
 4. Buka situs resmi ChatGPT, Gemini, Claude, atau Grok, lalu masuk sendiri ke akun Anda.
 5. Klik ikon ekstensi VaultSessions pada tab tempat Anda ingin menampilkan panel rapat.
 
-Gunakan Chrome versi terbaru. Versi minimum dalam manifest adalah Chrome 116, tetapi kompatibilitas API browser dan antarmuka penyedia dapat berbeda. Rapat biasa tidak memerlukan proses build atau server.
+Gunakan Chrome versi terbaru. Versi minimum dalam manifest adalah Chrome 119, tetapi kompatibilitas API browser dan antarmuka penyedia dapat berbeda. Rapat biasa tidak memerlukan proses build atau server.
 
 Setelah memperbarui berkas, muat ulang ekstensi, tab resmi AI, dan tampilan rapat.
 
@@ -116,6 +116,10 @@ Ketik topik dan tekan Enter. Shift+Enter membuat baris baru; saat komposisi IME 
 Batas awal adalah **3 kontribusi** dan **6 permintaan**. PASS dihitung sebagai permintaan, bukan kontribusi. Diskusi juga berakhir jika semua peserta yang terhubung melewati giliran secara berturut-turut. Gunakan **Hentikan diskusi** untuk mencegah giliran selanjutnya; jawaban yang sedang diproses mungkin masih perlu diambil sebelum input dibuka kembali.
 
 Tab AI ditampilkan di depan saat pengiriman dan pengambilan jawaban. Hindari mengedit atau berpindah percakapan tersebut selama giliran berjalan. Perlindungan input membantu mencegah pengetikan tidak sengaja setelah perpindahan fokus. Instruksi peran adalah pesan chat biasa, bukan system role; kepribadian yang tetap sama dan kepatuhan terhadap instruksi tidak dapat dijamin.
+
+### Jawaban suara
+
+Aktifkan **Audio** di dekat kolom pesan untuk menggunakan fitur pembacaan resmi setiap AI. VaultSessions menunggu sebelum bertanya kepada AI berikutnya; gunakan **Hentikan pembacaan dan lanjutkan** untuk melanjutkan.
 
 ### Gambar dan ringkasan
 
@@ -160,11 +164,17 @@ Berbagi halaman dapat mencakup informasi pribadi yang terlihat di halaman tempat
 
 ### Berkontribusi
 
-Kontribusi sangat diterima!
+VaultSessions adalah proyek sumber terbuka yang mengutamakan penggunaan lokal dan pengembangan berbasis AI.
 
-Fork repositori ini, tingkatkan VaultSessions, lalu kirim Pull Request.
+Menulis kode kini tidak harus dilakukan manusia sendirian. Alat pemrograman AI memungkinkan siapa saja berpartisipasi, termasuk orang yang belum pernah menulis kode. Kode VaultSessions sendiri ditulis oleh OpenAI Codex.
 
-Mari bangun cara yang lebih baik bagi manusia dan AI untuk berpikir bersama.
+Gunakan AI pilihan Anda — Codex, Claude Code, Gemini, atau agen pemrograman lainnya — untuk memahami, memperbaiki, dan mengembangkan proyek ini. Kontribusi kode yang ditulis langsung oleh manusia juga diterima.
+
+Saat mengembangkan atau memperbaiki VaultSessions bersama AI, minta AI membaca [catatan perbaikan](REPAIR_NOTES.md) yang relevan terlebih dahulu. Catatan ini berisi gejala, penyebab, perbaikan, dan langkah verifikasi masalah sebelumnya.
+
+VaultSessions bergantung pada struktur situs resmi AI sehingga integrasinya memang rentan rusak. Perubahan pada situs tersebut dapat membuat fitur berhenti berfungsi. Ini adalah keterbatasan dari cara aplikasi ini bekerja.
+
+Jika terjadi masalah, Anda dapat meminta bantuan AI Anda sendiri untuk menyelidiki dan memperbaikinya, lalu membagikan perbaikan melalui fork dan Pull Request.
 
 Distribusi ini tidak menyertakan rangkaian pengujian internal. Jelaskan langkah verifikasi saat mengajukan perubahan, terutama untuk adaptor DOM penyedia. Lihat [VaultSessions/i18n/README.md](../VaultSessions/i18n/README.md) untuk menambahkan bahasa.
 

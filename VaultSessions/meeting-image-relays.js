@@ -1,9 +1,9 @@
 'use strict';
 (() => {
-  const canSend=id=>meetingActive&&!meetingRestoring&&!viewSwitching&&!summaryBusy&&!connecting.has(id)&&!pendingDepartures.has(id)&&!waitingOnSkippedReply(id)&&!providerExchanges.has(id)&&!imageJobs?.isBusy(id);
+  const canSend=id=>(typeof speechPlayback==='undefined'||!speechPlayback.busy&&!(speechPlayback.enabled&&controller.running))&&meetingActive&&!meetingRestoring&&!viewSwitching&&!summaryBusy&&!connecting.has(id)&&!pendingDepartures.has(id)&&!waitingOnSkippedReply(id)&&!providerExchanges.has(id)&&!imageJobs?.isBusy(id);
   imageRelays=new RoundtableImageRelays.Queue({
     getTarget:id=>targets[id],
-    canProcess:()=>meetingActive&&!meetingRestoring&&!viewSwitching,
+    canProcess:()=>(typeof speechPlayback==='undefined'||!speechPlayback.busy&&!(speechPlayback.enabled&&controller.running))&&meetingActive&&!meetingRestoring&&!viewSwitching,
     canSend,
     status:flight=>request({type:'ROUNDTABLE_STATUS',provider:flight.provider,tabId:flight.tabId,requestId:flight.requestId}),
     idle:flight=>request({type:'ROUNDTABLE_IMAGE_IDLE',...flight}),

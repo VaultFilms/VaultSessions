@@ -9,7 +9,7 @@
     row.entry.dataset.type='image-generation';row.entry.dataset.imageTask=JSON.stringify({...task,state});
     row.entry.dataset.state=state;row.entry.classList.remove('pending');row.pending=false;
     row.body.removeAttribute('role');row.body.replaceChildren();
-    const label=document.createElement('p');label.dataset.i18n=state==='complete'?'imageJobComplete':state==='error'?'imageJobFailed':'imageJobWaiting';label.textContent=VaultI18n.t(label.dataset.i18n);row.body.append(label);
+    const label=document.createElement('p');label.dataset.i18n=state==='abandoned'?'imageJobAbandoned':state==='complete'?'imageJobComplete':state==='error'?'imageJobFailed':'imageJobWaiting';label.textContent=VaultI18n.t(label.dataset.i18n);row.body.append(label);
     if(task.topic){const topic=document.createElement('p');topic.className='image-job-topic';topic.textContent=task.topic;row.body.append(topic);}
     if(images.length){
       const gallery=document.createElement('div');gallery.className='generated-image-gallery';
@@ -22,7 +22,26 @@
       const note=document.createElement('p');note.className='note';note.dataset.i18n='imageJobPreview';note.textContent=VaultI18n.t('imageJobPreview');row.body.append(note);
     }
     originalLink(row,task);
-    row.meta.dataset.i18n=state==='complete'?'imageJobComplete':state==='error'?'imageJobFailed':'imageJobGenerating';row.meta.textContent=VaultI18n.t(row.meta.dataset.i18n);
+    if (!task.resolved && (state === 'waiting' || state === 'error')) {
+      const resume = document.createElement('button');
+      resume.type = 'button';
+      resume.className = 'draft-skip';
+      resume.dataset.i18n = 'imageJobAbandon';
+      resume.textContent = VaultI18n.t('imageJobAbandon');
+      resume.addEventListener('click', async () => {
+        if (resume.disabled || !meetingActive || meetingRestoring) return;
+        resume.disabled = true;
+        try {
+          const release = request({type:'ROUNDTABLE_ABANDON_IMAGE',provider:task.provider,tabId:task.tabId,requestId:task.requestId,conversationUrl:task.conversationUrl});
+          imageJobs.abandon(task.requestId);
+          await release;
+        } catch (error) {
+          setStatus('error',error.message,{inLog:false});
+        }
+      });
+      row.body.append(document.createElement('br'),resume);
+    }
+    row.meta.dataset.i18n=state==='abandoned'?'imageJobAbandoned':state==='complete'?'imageJobComplete':state==='error'?'imageJobFailed':'imageJobGenerating';row.meta.textContent=VaultI18n.t(row.meta.dataset.i18n);
   }
   imageJobs = new RoundtableImageJobs.Jobs({
     canPoll:()=>meetingActive&&!meetingRestoring,
@@ -31,8 +50,13 @@
     collect:task=>request({type:'ROUNDTABLE_IMAGE_RESULT',provider:task.provider,tabId:task.tabId,requestId:task.requestId}),
     onEvent:event=>{
       const row=rows.get(event.task.requestId);if(!row)return;
-      if(event.type==='recovered'){
+      if(event.type==='abandoned'){
+        render(row,{...event.task,resolved:true},'abandoned');
+        rows.delete(event.task.requestId);
+        if(targets[event.task.provider]?.tabId===event.task.tabId)providerStatus(event.task.provider,'success',VaultI18n.t('imageJobAbandoned'));
+      }else if(event.type==='recovered'){
         row.entry.dataset.imageTask=JSON.stringify({...event.task,state:'error',resolved:true});
+        row.body.querySelector('button[data-i18n="imageJobAbandon"]')?.remove();
         if(targets[event.task.provider]?.tabId===event.task.tabId){
           if(event.disconnected)delete targets[event.task.provider];
           else providerStatus(event.task.provider,'success',VaultI18n.t('message_048'));
@@ -77,9 +101,9 @@
     else imageJobs.add(task);
   });
   globalThis.restoreImageJobRow=(row,task,images)=>{
-    if(!task||!['chatgpt','gemini','claude'].includes(task.provider))return;
+    if(!task||!['chatgpt','gemini','claude','grok'].includes(task.provider))return;
     rows.set(task.requestId,row);
-    if(task.resolved)render(row,task,'error');
+    if(task.resolved)render(row,task,task.state==='abandoned'?'abandoned':'error');
     else if(task.state==='complete')render(row,task,'complete',images||[]);
     else imageJobs.add(task);
   };

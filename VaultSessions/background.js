@@ -2,6 +2,7 @@
 importScripts('page-context.js');
 importScripts('image-utils.js');
 importScripts('generated-images.js');
+importScripts('claude-svg.js');
 importScripts('rich-text.js');
 importScripts('document-records.js');
 importScripts('image-relays.js');
@@ -18,14 +19,14 @@ const localMeetingSender=sender=>sender.id===chrome.runtime.id&&sender.frameId==
 const webSender = sender => sender.id === chrome.runtime.id && isMeetingURL(sender.url) && sender.frameId === 0 && Number.isInteger(sender.tab?.id);
 
 
-const VERSION = '0.1.3';
+const VERSION = '0.1.4';
 const BRIDGE_VERSION = '0.5.1';
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const PROVIDERS = {
-  chatgpt: { foreground: true, bridgeVersion: '0.9.7', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
-  gemini: { foreground: true, bridgeVersion: '0.9.6', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
-  claude: { foreground: true, bridgeVersion: '0.10.5', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' },
-  grok: { foreground: true, bridgeVersion: '0.1.0', name: 'Grok', pattern: 'https://grok.com/*', prefix: 'ROUNDTABLE_GROK' }
+  chatgpt: { foreground: true, bridgeVersion: '0.9.12', name: 'ChatGPT', pattern: 'https://chatgpt.com/*', prefix: 'ROUNDTABLE_CHATGPT' },
+  gemini: { foreground: true, bridgeVersion: '0.9.12', name: 'Gemini', pattern: 'https://gemini.google.com/*', prefix: 'ROUNDTABLE_GEMINI' },
+  claude: { foreground: true, bridgeVersion: '0.10.9', name: 'Claude', pattern: 'https://claude.ai/*', prefix: 'ROUNDTABLE_CLAUDE' },
+  grok: { foreground: true, bridgeVersion: '0.1.6', name: 'Grok', pattern: 'https://grok.com/*', prefix: 'ROUNDTABLE_GROK' }
 };
 const cleanURL = url => url?.split(/[?#]/)[0];
 const sending = new Set();
@@ -353,13 +354,22 @@ function handleMeetingMessage(message, sender, respond) {
   }
   if (message?.type === 'ROUNDTABLE_HELLO') { respond({ ok: true, version: VERSION }); return; }
   if(message?.type==='ROUNDTABLE_DISCOVER'){discoverProviders().then(providers=>respond({ok:true,providers}),error=>respond({ok:false,error:error.message}));return true;}
-  if (!['ROUNDTABLE_INSPECT', 'ROUNDTABLE_INSPECTOR_CONTEXT', 'ROUNDTABLE_INSPECTOR_SHARE', 'ROUNDTABLE_CLEAR_DRAFT', 'ROUNDTABLE_CONNECT', 'ROUNDTABLE_RELOAD_CONNECT', 'ROUNDTABLE_SEND', 'ROUNDTABLE_STATUS', 'ROUNDTABLE_ROLE_STATE', 'ROUNDTABLE_RECOVER_ROLE', 'ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_IMAGE_RESULT', 'ROUNDTABLE_IMAGE_IDLE'].includes(message?.type)) return;
+  if (!['ROUNDTABLE_SPEECH', 'ROUNDTABLE_INSPECT', 'ROUNDTABLE_INSPECTOR_CONTEXT', 'ROUNDTABLE_INSPECTOR_SHARE', 'ROUNDTABLE_CLEAR_DRAFT', 'ROUNDTABLE_CONNECT', 'ROUNDTABLE_RELOAD_CONNECT', 'ROUNDTABLE_SEND', 'ROUNDTABLE_STATUS', 'ROUNDTABLE_ROLE_STATE', 'ROUNDTABLE_RECOVER_ROLE', 'ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_ABANDON_IMAGE', 'ROUNDTABLE_IMAGE_RESULT', 'ROUNDTABLE_IMAGE_IDLE'].includes(message?.type)) return;
   (async () => {
     const providerId = message.provider;
     const provider = Object.hasOwn(PROVIDERS, providerId) && PROVIDERS[providerId];
     if (!provider) throw new Error('送信先のAIが不明です。');
     if (['ROUNDTABLE_CONNECT','ROUNDTABLE_RELOAD_CONNECT','ROUNDTABLE_SEND','ROUNDTABLE_ROLE_STATE','ROUNDTABLE_RECOVER_ROLE'].includes(message.type)) await meetingSessions.verify(message.clientId);
     if(['ROUNDTABLE_INSPECT','ROUNDTABLE_INSPECTOR_CONTEXT','ROUNDTABLE_INSPECTOR_SHARE'].includes(message.type))await meetingSessions.verify(message.clientId);
+    if(message.type==='ROUNDTABLE_SPEECH') {
+      await meetingSessions.verify(message.clientId);
+      if(!['start','status','stop'].includes(message.action)||!Number.isInteger(message.tabId)||typeof message.requestId!=='string'||!/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId))throw Error('Invalid read-aloud request.');
+      const tab=await chrome.tabs.get(message.tabId);
+      if(!tab.url?.startsWith(provider.pattern.replace('*',''))||cleanURL(tab.url)!==message.conversationUrl)throw Error('The read-aloud conversation changed.');
+      if(message.action==='start')await activateProvider(tab);
+      try{return await deliver(provider,tab.id,{type:provider.prefix+'_SPEECH',action:message.action,requestId:message.requestId});}
+      finally{if(message.action==='start')await returnToMeeting(provider,tab.id,message.returnTabId);}
+    }
     if (message.type === 'ROUNDTABLE_CLEAR_DRAFT') {
       await meetingSessions.verify(message.clientId);
       if (providerId !== 'chatgpt' || !Number.isInteger(message.tabId) || typeof message.draftToken !== 'string'
@@ -400,6 +410,23 @@ function handleMeetingMessage(message, sender, respond) {
       return { ok: true, provider: providerId, tabId: tab.id, url: hello.url || cleanURL(tab.url) };
     }
     if (typeof message.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(message.requestId)) throw new Error('送信IDが不正です。会議ページを再読み込みしてください。');
+    if (message.type === 'ROUNDTABLE_ABANDON_IMAGE') {
+      await meetingSessions.verify(message.clientId);
+      if (!Number.isInteger(message.tabId)) throw Error('Invalid image task.');
+      let tab;
+      try { tab = await chrome.tabs.get(message.tabId); }
+      catch { return {ok:true}; }
+      if (cleanURL(tab.url) !== message.conversationUrl || !tab.url?.startsWith(provider.pattern.replace('*',''))) return {ok:true};
+      try {
+        const result = await deliver(provider,tab.id,{type:provider.prefix+'_ABANDON_IMAGE',requestId:message.requestId});
+        if (!result.ok) return result;
+      } catch {
+        // Closing/reloading the official tab also ends this collector.
+      } finally {
+        await releaseInput(tab.id,message.requestId);
+      }
+      return {ok:true};
+    }
     if (message.type === 'ROUNDTABLE_IMAGE_IDLE') {
       await meetingSessions.verify(message.clientId);
       if (!Number.isInteger(message.tabId)) throw Error('Invalid image-generation target.');
@@ -410,9 +437,9 @@ function handleMeetingMessage(message, sender, respond) {
     }
     if (['ROUNDTABLE_DETACH_IMAGE', 'ROUNDTABLE_IMAGE_RESULT'].includes(message.type)) {
       await meetingSessions.verify(message.clientId);
-      if (!['chatgpt','gemini','claude'].includes(providerId) || !Number.isInteger(message.tabId)) throw Error('Invalid image-generation target.');
+      if (!Number.isInteger(message.tabId)) throw Error('Invalid image-generation target.');
       const tab = await chrome.tabs.get(message.tabId);
-      if (!tab.url?.startsWith(providerId === 'chatgpt' ? 'https://chatgpt.com/' : providerId === 'gemini' ? 'https://gemini.google.com/' : 'https://claude.ai/')) throw Error('The image-generation tab has closed or changed.');
+      if (!tab.url?.startsWith(provider.pattern.replace('*',''))) throw Error('The image-generation tab has closed or changed.');
       const state = await deliver(provider, tab.id, {type:provider.prefix+'_STATUS',requestId:message.requestId});
       if (message.type === 'ROUNDTABLE_DETACH_IMAGE' && state.ok && state.phase === 'complete' && state.imageFallback === true) {
         await releaseInput(tab.id, message.requestId);
@@ -422,7 +449,13 @@ function handleMeetingMessage(message, sender, respond) {
       if (!state.ok || state.kind !== 'image' || !['generating_image','complete'].includes(state.phase)) throw Error('No matching image-generation task was found.');
       if (message.type === 'ROUNDTABLE_IMAGE_RESULT') {
         const result = await deliver(provider, tab.id, {type:provider.prefix+'_IMAGE_RESULT',requestId:message.requestId});
-        if(providerId!=='claude'||!result.ok||!result.needsFrame)return result;
+        if(!result.ok||!result.needsFrame)return result;
+        if(result.visualizer===true) {
+          // Gemini's sandboxed srcdoc receives the responder via origin-fallback content scripts.
+          if(providerId!=='gemini')await chrome.scripting.executeScript({target:{tabId:tab.id,allFrames:true},func:RoundtableSVG.installFrameResponder});
+          return deliver(provider,tab.id,{type:provider.prefix+'_IMAGE_RESULT',requestId:message.requestId,framesReady:true});
+        }
+        if(providerId!=='claude')return {ok:false,error:'Unsupported SVG preview frame.'};
         // Only the SVG preview opened by the matching current-turn file card may be captured.
         await chrome.scripting.executeScript({target:{tabId:tab.id,allFrames:true},files:['generated-images.js','claude-svg.js']});
         const frames=await chrome.scripting.executeScript({target:{tabId:tab.id,allFrames:true},func:async()=>{

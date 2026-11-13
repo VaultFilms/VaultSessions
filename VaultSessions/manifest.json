@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VaultSessions",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Discuss with your signed-in ChatGPT, Gemini, Claude, and Grok in one shared meeting.",
   "background": {
     "service_worker": "background.js"
@@ -30,6 +30,8 @@
         "rich-text.js",
         "image-utils.js",
         "generated-images.js",
+        "claude-svg.js",
+        "content-read-aloud.js",
         "content-images.js",
         "content-input-guard.js",
         "content-chatgpt.js"
@@ -46,6 +48,8 @@
         "image-utils.js",
         "generated-images.js",
         "generated-gemini-images.js",
+        "claude-svg.js",
+        "content-read-aloud.js",
         "content-images.js",
         "content-input-guard.js",
         "content-gemini.js"
@@ -62,6 +66,7 @@
         "image-utils.js",
         "generated-images.js",
         "claude-svg.js",
+        "content-read-aloud.js",
         "content-images.js",
         "content-input-guard.js",
         "content-claude.js"
@@ -69,11 +74,16 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://grok.com/*"],
+      "matches": [
+        "https://grok.com/*"
+      ],
       "js": [
         "inspector-dom.js",
         "rich-text.js",
         "image-utils.js",
+        "generated-images.js",
+        "claude-svg.js",
+        "content-read-aloud.js",
         "content-images.js",
         "content-input-guard.js",
         "content-grok.js"
@@ -89,6 +99,28 @@
         "content-web-bridge.js"
       ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://*.claudemcpcontent.com/mcp_apps*"
+      ],
+      "js": [
+        "claude-svg.js"
+      ],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "claude-svg.js"
+      ],
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_idle"
     }
   ],
   "permissions": [
@@ -96,7 +128,7 @@
     "sidePanel",
     "scripting"
   ],
-  "minimum_chrome_version": "116",
+  "minimum_chrome_version": "119",
   "side_panel": {
     "default_path": "meeting.html?view=sidepanel"
   },

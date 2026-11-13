@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION = '0.1.0';
+  const VERSION = '0.1.6';
   const EDITOR = 'form [data-testid="chat-input"] .query-bar-editor[contenteditable="true"], form .query-bar-editor[contenteditable="true"]';
   const SEND = 'button[type="submit"], button[data-testid="send-button"], button[aria-label="Send message"], button[aria-label="Submit"]';
   const STOP = 'button[data-testid="stop-button"], button[aria-label="Stop"], button[aria-label^="Stop generating"], button[aria-label^="Stop response"], button[aria-label="生成を停止"], button[aria-label="回答を停止"]';
@@ -19,9 +19,32 @@
   const replies = () => [...document.querySelectorAll(ASSISTANT)];
   const turn = element => element?.closest('[id^="response-"]');
   const textOf = element => element?.innerText?.trim() ?? '';
-  // Grok keeps the full text in a direct span even when the bubble is visually collapsed.
-  // The surrounding bubble also contains a speaker label and the Show more button.
-  const userText = element => element.querySelector(':scope > span')?.textContent?.trim() ?? textOf(element);
+  // The full bubble text can be rendered as Markdown even while visually collapsed.
+  // Restore structural markers for exact prompt matching; exclude the speaker and Show more UI.
+  function sourceText(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    const tag = node.tagName;
+    if (tag === 'BR') return '\n';
+    if (tag === 'BUTTON' || node.hasAttribute('data-no-copy')) return '';
+    if (tag === 'OL' || tag === 'UL') {
+      let number = Number(node.getAttribute('start')) || 1;
+      return [...node.children].map(child => {
+        if (child.tagName !== 'LI') return sourceText(child);
+        if (child.hasAttribute('value')) number = Number(child.getAttribute('value'));
+        const marker = tag === 'OL' ? `${number++}. ` : '- ';
+        return '\n' + marker + [...child.childNodes].map(sourceText).join('');
+      }).join('') + '\n';
+    }
+    const text = [...node.childNodes].map(sourceText).join('');
+    if (/^H[1-6]$/.test(tag)) return '\n' + '#'.repeat(Number(tag[1])) + ' ' + text + '\n';
+    return /^(P|DIV|SECTION|BLOCKQUOTE)$/.test(tag) ? '\n' + text + '\n' : text;
+  }
+  const userText = element => {
+    const body = element.querySelector('[data-bubble-text]') || element.querySelector(':scope > span');
+    if (!body) return textOf(element);
+    return body.nodeType === Node.ELEMENT_NODE ? sourceText(body).trim() : body.textContent?.trim() || '';
+  };
   const normalize = text => text.replace(/\s+/g, ' ').trim();
   const url = () => location.origin + location.pathname;
   const saved = path => /^\/c\/[^/]+\/?$/.test(path);
@@ -58,6 +81,11 @@
 
   function watch(matches, silent) {
     const deadline = Date.now() + 180000;
+    const svgTracker = globalThis.RoundtableSVG?.createTracker({
+      current:()=>job,
+      complete:(task,images)=>{task.images=images;finish('complete');},
+      fail:(_task,error)=>finish('error',error)
+    });
     let stableSince = 0, missingSince = 0, previousReply, previousText;
     const tick = () => {
       try {
@@ -79,6 +107,10 @@
         const reply = replies().findLast(candidate => follows(user, candidate));
         const body = reply?.querySelector(BODY);
         const text = textOf(body);
+        if (!silent && !job.imageRelay && svgTracker?.update(job,reply,!!reply && completed(reply) && !generating() && saved(path))) {
+          job.text = text;
+          return;
+        }
         if (!silent) {
           job.text = text;
           if (text) job.phase = 'streaming';
@@ -92,7 +124,13 @@
         if (!settled) { stableSince = 0; return; }
         stableSince ||= Date.now();
         if (Date.now() - stableSince < (noReply ? 2500 : 1000)) return;
-        if (!silent) job.richText = globalThis.RoundtableRichText?.captureReply(body, 'grok');
+        if (!silent) {
+          job.richText = globalThis.RoundtableRichText?.captureReply(body, 'grok');
+          if (job.kind === 'image' && text) {
+            delete job.kind;
+            job.imageFallback = true;
+          }
+        }
         finish('complete');
       } catch (error) {
         if (error.code === 'GROK_UNAVAILABLE') finish('error', error.message, error.code);
@@ -103,7 +141,7 @@
   }
 
   async function send(message) {
-    if ((job && ['sending','waiting','streaming'].includes(job.phase)) || generating()) {
+    if ((job && ['sending','waiting','streaming','generating_image'].includes(job.phase)) || generating()) {
       return {ok:false,code:'PROVIDER_BUSY',error:'Grok is already responding. Wait for it to finish.'};
     }
     try { checkUsageLimit(); }
@@ -116,7 +154,7 @@
     const start = editor();
     if (!enabled(start)) return {ok:false,code:'GROK_UNAVAILABLE',error:'The Grok chat composer was not found. Open a signed-in chat.'};
     if (textOf(start)) return {ok:false,code:'COMPOSER_DRAFT',error:'Grok has a draft. Send or clear it before continuing.'};
-    job = {requestId, phase:'sending', imageRelay, text:'', url:startURL};
+    job = {requestId, receipt, phase:'sending', imageRelay, text:'', url:startURL};
     try {
       if (typeof message.text !== 'string' || !message.text.trim() || text.length > 75000) throw Error('Invalid Grok message length.');
       RoundtableImageUpload.checkDraft(start);
@@ -151,13 +189,37 @@
     }
   }
 
+  const speech=globalThis.RoundtableSpeech?.create({provider:'grok',getJob:()=>job,users:users,replies:replies,userText,url:()=>url()});
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (sender.id !== chrome.runtime.id || !message?.type?.startsWith(PREFIX)) return;
     const operation = message.type.slice(PREFIX.length);
-    const busy = !!job && ['sending','waiting','streaming'].includes(job.phase);
+    if(operation==='SPEECH'){if(!speech){respond({ok:false,state:'unsupported'});return;}speech.handle(message).then(respond);return true;}
+    const busy = !!job && ['sending','waiting','streaming','generating_image'].includes(job.phase);
+    if (operation === 'ABANDON_IMAGE') {
+      if (job?.requestId === message.requestId && job.kind === 'image') {
+        finish('abandoned');
+        job.abandoned = true;
+        globalThis.RoundtableSVG?.releaseFrame(job);
+        job.images = null;
+      }
+      respond({ok:true});
+      return;
+    }
     if (operation === 'HELLO') respond({ok:true,version:VERSION,ready:!!editor(),busy:busy || generating(),url:url()});
     if (operation === 'STATUS') {
-      respond(job?.requestId === message.requestId ? {ok:true,...job} : {ok:false,error:'No matching Grok request.'});
+      const {images:cachedImages,...state}=job || {};
+      respond(job?.requestId === message.requestId ? {ok:true,...state} : {ok:false,error:'No matching Grok request.'});
+    }
+    if (operation === 'IMAGE_RESULT') {
+      const user = users().findLast(node=>job?.receipt && userText(node).includes(job.receipt));
+      if (job?.requestId !== message.requestId || job.phase !== 'complete' || (!job.images?.length&&!job.svgFrame)
+          || job.url !== url() || !user || user !== users().at(-1)) {
+        respond({ok:false,error:'The Grok SVG is unavailable or the conversation changed.'});
+      } else if(job.svgFrame) {
+        const reply=replies().findLast(candidate=>follows(user,candidate));
+        respond(RoundtableSVG.collectFrame(job,reply,message.framesReady===true));
+      } else respond({ok:true,images:job.images,text:job.text,url:job.url});
+      return;
     }
     if (operation === 'INSPECT') {
       respond({ok:true,report:VaultInspectorDOM.inspect('grok',{editor:EDITOR,send:SEND,stop:STOP,user:USER,reply:ASSISTANT},{phase:job?.phase,busy,generating:generating()})});

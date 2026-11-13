@@ -8,9 +8,9 @@ function renderResponse(element,text,richText){
 function responseText(element){
   return globalThis.RoundtableRichText?.read(element)?.text ?? element?.innerText ?? element?.textContent ?? '';
 }
-const VERSION = '0.1.3';
+const VERSION = '0.1.4';
 // Accept compatible service workers after UI-only updates.
-const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.3']);
+const COMPATIBLE_BACKEND_VERSIONS = new Set(['0.1.4']);
 const meetingClientId = crypto.randomUUID();
 let meetingActive = true;
 let summaryBusy = false;
@@ -148,6 +148,7 @@ const runRows = new Map();
 const controller = new RoundtableDiscussion.DiscussionController({
   languageNames: globalThis.VaultI18n?.locales.map(item=>item.meetingLanguage),
   order: Object.keys(providers), names: Object.fromEntries(Object.entries(providers).map(([id, value]) => [id, value.name])),
+  afterReply:(provider,result,context)=>readOfficialReply(provider,result,context),
   getMode: currentMode,
   getManual: ({question,language:answerLanguage}) => VaultManual.prompt(question,answerLanguage,VaultManual.capture(document,{
     view:isSidePanel?'sidepanel':'fullscreen',uiLanguage:VaultI18n.locale,mode:currentMode(),protocol:location.protocol,
@@ -556,11 +557,11 @@ async function performExchange(id, text, { silent = false, requireReply = false,
       if (!silent && run && state.kind === 'image') {
         skip?.remove();
         const detached = await request({type:'ROUNDTABLE_DETACH_IMAGE',provider:id,tabId:result.tabId,requestId,returnTabId:ownTab?.id});
-        if (detached.reply) return detached.reply;
+        if (detached.reply) return {...detached.reply,speech:{requestId,tabId:result.tabId,conversationUrl:detached.reply.url||targets[id].conversationUrl}};
         const completed = state.phase === 'complete' ? await request({type:'ROUNDTABLE_IMAGE_RESULT',provider:id,tabId:result.tabId,requestId}) : null;
         return {detachedImage:true,images:completed?.images,task:{provider:id,tabId:result.tabId,requestId,conversationUrl:state.url||targets[id].conversationUrl,startedAt:Date.now(),topic:run.text.slice(0,1000)}};
       }
-      if (state.phase === 'complete') { stage(VaultI18n.t('message_040')); return { text: state.text || '', richText:state.richText, url: state.url }; }
+      if (state.phase === 'complete') { stage(VaultI18n.t('message_040')); return { text: state.text || '', richText:state.richText, url: state.url, speech:{requestId,tabId:result.tabId,conversationUrl:state.url||targets[id].conversationUrl} }; }
       stage(state.phase === 'streaming' ? VaultI18n.t('message_041') : VaultI18n.t('message_038'));
       if (!silent) onProgress(state.text || '',state.richText);
       await new Promise(resolve => {

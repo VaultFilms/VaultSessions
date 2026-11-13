@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VaultSessions</title>
   <link rel="icon" type="image/png" href="icons/leaf-32.png">
-  <link rel="stylesheet" href="meeting.css?v=0.1.3">
+  <link rel="stylesheet" href="meeting.css?v=0.1.4">
   <script src="web-bridge.js" defer></script>
   <script src="i18n/runtime.js" defer></script>
   <script src="i18n/en.js" defer></script>
@@ -28,30 +28,32 @@
   <script src="image-jobs.js" defer></script>
   <script src="image-relays.js" defer></script>
   <script src="recipient-routing.js" defer></script>
-  <script src="auto-invitations.js?v=0.1.3" defer></script>
+  <script src="auto-invitations.js?v=0.1.4" defer></script>
   <script src="app-manual.js" defer></script>
-  <script src="discussion-controller.js?v=0.1.3" defer></script>
+  <script src="discussion-controller.js?v=0.1.4" defer></script>
   <script src="inspector-context.js" defer></script>
   <script src="document-records.js" defer></script>
-  <script src="meeting.js?v=0.1.3-discussion" defer></script>
+  <script src="speech-playback.js" defer></script>
+  <script src="meeting.js?v=0.1.4-discussion" defer></script>
+  <script src="meeting-speech.js" defer></script>
   <script src="composer-size.js" defer></script>
   <script src="inspector.js" defer></script>
   <script src="meeting-image-relays.js" defer></script>
   <script src="meeting-image-jobs.js" defer></script>
-  <script src="meeting-view.js?v=0.1.3" defer></script>
+  <script src="meeting-view.js?v=0.1.4" defer></script>
   <script src="handoff.js" defer></script>
   <script src="meeting-handoff.js" defer></script>
   <script src="summary.js" defer></script>
   <script src="meeting-summary.js" defer></script>
   <script src="log-font-size.js" defer></script>
-  <script src="meeting-shell.js?v=0.1.3" defer></script>
+  <script src="meeting-shell.js?v=0.1.4" defer></script>
   <script src="panel-toggle.js" defer></script>
   <script src="dev-mode.js" defer></script>
   
 </head>
 <body>
   <header class="app-header">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 7C11 4 5 13 9 22c7 5 15-2 15-15Z" fill="white"/><path d="M11 25c0-9 5-13 11-16" fill="none" stroke="#22654c" stroke-width="2"/></svg></span><div><h1>VaultSessions <span class="version">v0.1.3</span></h1><a class="creator mobile-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a></div></div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 7C11 4 5 13 9 22c7 5 15-2 15-15Z" fill="white"/><path d="M11 25c0-9 5-13 11-16" fill="none" stroke="#22654c" stroke-width="2"/></svg></span><div><h1>VaultSessions <span class="version">v0.1.4</span></h1><a class="creator mobile-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a></div></div>
     <p class="tagline" data-i18n="tagline">A text-based meeting app for ChatGPT, Gemini, Claude and Grok</p>
     <button id="toggle-participants-panel" class="quiet-button" type="button" aria-controls="participants-panel" aria-expanded="true" data-i18n-aria="hideParticipantsPanel" data-i18n-title="hideParticipantsPanel"><span aria-hidden="true">☰</span></button>
     <nav class="header-actions" aria-label="Meeting controls" data-i18n-aria="meetingControls"><a class="creator desktop-credit" href="https://www.youtube.com/channel/UCmiLs19uM0in4ubeyvPHLIQ" target="_blank" rel="noopener noreferrer">By <strong>VaultFilms ↗</strong></a><button id="switch-view" type="button">Open side panel</button></nav>
@@ -86,6 +88,7 @@
       <div class="log-font-controls" role="group" aria-label="Log text size" data-i18n-aria="logTextSize"><button id="log-font-smaller" type="button" aria-label="Smaller log text" data-i18n-aria="logTextSmaller">A−</button><button id="log-font-larger" type="button" aria-label="Larger log text" data-i18n-aria="logTextLarger">A＋</button><button id="log-font-reset" type="button" data-i18n="logTextReset">Reset size</button></div>
       <div id="discussion-progress"><button id="summarize" type="button" data-i18n="summarize">Summarize discussion</button><button id="create-handoff" type="button" data-i18n="createHandoff" hidden>Create handoff</button><span id="compact-meeting-state" data-i18n="ready">Ready to discuss</span><p id="current-speaker" role="status" aria-live="polite">現在発言中: なし</p><p id="discussion-counts">発言 0回 / 問い合わせ 0回 / 連続PASS 0回</p><button id="stop-discussion" type="button" disabled data-i18n="stop">Stop discussion</button></div>
       <form id="meeting-form">
+        <div id="speech-controls"><label for="speech-enabled"><input id="speech-enabled" class="toggle" type="checkbox" role="switch"><span data-i18n="speechToggle">Audio</span></label><span id="speech-status" role="status" aria-live="polite"></span><button id="speech-next" type="button" hidden data-i18n="speechNext">Stop reading and continue</button></div>
         <label for="message" class="sr-only" data-i18n="messageLabel">Message</label>
         <div id="page-attachment" hidden><span id="page-attachment-title"></span><button id="remove-page" type="button" data-i18n="message_001">Remove</button></div>
         <details id="image-composer"><summary aria-label="Attachments" data-i18n-aria="composerAttachments"><span aria-hidden="true">＋</span></summary><div class="attachment-panel"><label for="meeting-image" data-i18n="imageLimit">Attach up to 4 images · 5 MB each · 10 MB total</label><input id="meeting-image" type="file" multiple accept="image/png,image/jpeg,image/webp" aria-describedby="image-note"><div id="image-preview" hidden><div id="image-items"></div><button id="remove-image" type="button" data-i18n="removeAll">Remove all</button></div><p id="image-note" class="note" data-i18n="imageHint">Images are uploaded to each AI's official chat when you send.</p><div id="page-attach-controls" hidden><button id="attach-page" type="button" data-i18n="pageSharing">Attach this page to the next message</button><p id="page-attach-note" class="note" role="status" data-i18n="pageHint">Capture the readable text currently on this page.</p></div></div></details>
